@@ -213,8 +213,18 @@ export default function Dashboard({ onNavigate }) {
         if (d >= startMonth) data[d.getMonth()].inclusoes++;
       }
     });
+    // Count alterações and exclusões from solicitacoes
+    solicitacoes.forEach(s => {
+      if (s.criado_em) {
+        const d = new Date(s.criado_em);
+        if (d >= startMonth) {
+          if (s.tipo === 'update') data[d.getMonth()].alteracoes++;
+          else if (s.tipo === 'delete') data[d.getMonth()].exclusoes++;
+        }
+      }
+    });
     return data;
-  }, [profissionais, periodoFiltro]);
+  }, [profissionais, solicitacoes, periodoFiltro]);
 
   const chartCBO = useMemo(() => {
     const count = {};
@@ -312,7 +322,7 @@ export default function Dashboard({ onNavigate }) {
         <Suspense fallback={<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">{Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="bg-white rounded-md p-3 border border-gray-300 h-[200px] animate-pulse"><div className="h-3.5 w-28 bg-gray-200 rounded mb-2" /><div className="h-[85%] flex items-end gap-1.5 px-2 pb-2">{Array.from({ length: 8 }).map((_, j) => <div key={j} className="flex-1 bg-gray-200 rounded-t" style={{ height: `${[60,75,45,80,55,70,50,65][j % 8]}%` }} />)}</div></div>
         ))}</div>}>
-          <ChartsGrid chartMensal={chartMensal} chartCBO={chartCBO} chartCarga={chartCarga} />
+          <ChartsGrid chartMensal={chartMensal} chartCBO={chartCBO} chartCarga={chartCarga} darkMode={darkMode} />
         </Suspense>
 
         {/* Period filter */}
