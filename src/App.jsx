@@ -33,10 +33,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <AppContent />
-      </ToastProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
