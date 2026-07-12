@@ -54,12 +54,12 @@ export function ToastProvider({ children }) {
       </div>
       {/* Confirm dialog */}
       {confirm && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={() => handleConfirm(false)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 overflow-hidden border-l-4 border-[var(--cor-primaria)]" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 dark:bg-black/70" onClick={() => handleConfirm(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full mx-4 overflow-hidden border-l-4 border-[var(--cor-primaria)] dark:border-[#8ab4f8]" onClick={e => e.stopPropagation()}>
             <div className="p-5">
               <div className="flex items-start gap-3">
-                <HelpCircle size={24} className="text-[var(--cor-primaria)] flex-shrink-0 mt-0.5" />
-                <p className="text-gray-800 font-medium text-sm">{confirm.msg}</p>
+                <HelpCircle size={24} className="text-[var(--cor-primaria)] dark:text-[#8ab4f8] flex-shrink-0 mt-0.5" />
+                <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{confirm.msg}</p>
               </div>
             </div>
             <div className="flex justify-end gap-2.5 px-5 pb-4">
