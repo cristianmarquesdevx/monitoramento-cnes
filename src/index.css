@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+:root {
+  --cor-primaria: #003c7d;
+  --cor-primaria-hover: #002a5a;
+  --cor-primaria-claro: #dbe5f1;
+  --cor-sucesso: #28a745;
+  --cor-perigo: #dc3545;
+  --cor-alerta: #ffc107;
+  --cor-info: #17a2b8;
+}
+
+body {
+  font-family: Arial, sans-serif;
+}
+
+@keyframes loginFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes loginShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+@media print {
+  @page {
+    margin: 10mm 8mm;
+  }
+  body {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  body * {
+    visibility: hidden !important;
+  }
+  .print-area, .print-area * {
+    visibility: visible !important;
+  }
+  .print-area {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 15px 20px;
+    background: white;
+    font-family: Arial, Helvetica, sans-serif;
+    box-sizing: border-box;
+  }
+  .print-area table {
+    page-break-inside: auto;
+  }
+  .print-area tr {
+    page-break-inside: avoid;
+  }
+  .print-area thead {
+    display: table-header-group;
+  }
+}
