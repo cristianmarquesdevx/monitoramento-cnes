@@ -24,7 +24,6 @@ export default function Dashboard() {
   const [buscaGlobal, setBuscaGlobal] = useState('');
   const [filtroEspecialidade, setFiltroEspecialidade] = useState('todos');
   const [filtroControle, setFiltroControle] = useState('todos');
-  const [selectedIds, setSelectedIds] = useState(new Set());
   const [solicitacaoModal, setSolicitacaoModal] = useState(null);
   const [kpiModal, setKpiModal] = useState(null); // { titulo, lista }
   const [relatoriosModal, setRelatoriosModal] = useState(false);
@@ -212,12 +211,6 @@ export default function Dashboard() {
       setUnidadeFiltro(match.cnes);
     }
   }, [buscaUnidade, unidades, unidadeFiltro]);
-
-  // Toggle all visible
-  const toggleAll = (checked) => {
-    const ids = new Set(checked ? profissionaisFiltrados.map(p => p.id) : []);
-    setSelectedIds(ids);
-  };
 
   const marcarConcluido = async (id, concluido) => {
     await supabase.from('profissionais').update({ controle_concluido: concluido }).eq('id', id);
@@ -482,13 +475,6 @@ export default function Dashboard() {
       <div className="bg-[var(--cor-primaria)] text-white px-4 py-1 font-bold text-sm">2. RELAÇÃO DOS PROFISSIONAIS</div>
       <ProfessionalsTable
         profissionaisFiltrados={profissionaisFiltrados}
-        selectedIds={selectedIds}
-        onToggleAll={toggleAll}
-        onToggleSelect={(id, checked) => {
-          const ids = new Set(selectedIds);
-          if (checked) ids.add(id); else ids.delete(id);
-          setSelectedIds(ids);
-        }}
         onMarcarConcluido={marcarConcluido}
         getCboDesc={getCboDesc}
       />
