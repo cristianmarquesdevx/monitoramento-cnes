@@ -51,7 +51,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-5 overflow-y-auto transition-opacity duration-500"
+    <div className={`fixed inset-0 z-[10000] flex items-center justify-center p-5 overflow-y-auto transition-opacity duration-500 ${dark ? '' : ''}`}
          style={{ background: dark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}>
       
       <div className={`relative w-full max-w-[520px] rounded-lg overflow-hidden shadow-2xl ${dark ? 'bg-[#1e1e2e]' : 'bg-white'}`}
@@ -86,7 +86,7 @@ export default function LoginScreen() {
         </div>
 
         {/* Body */}
-        <div className={`px-7 py-6 ${dark ? 'bg-[#1e1e2e]' : 'bg-white'}`}>
+        <div className="px-7 py-6">
           <div className={`flex items-center gap-2.5 text-base font-semibold mb-4 pb-3 border-b-2 ${dark ? 'text-[#8ab4f8] border-[#2a2a3e]' : 'text-[var(--cor-primaria)] border-gray-200'}`}>
             <UserCircle size={26} className={dark ? 'text-[#3a5a7a]' : 'text-[var(--cor-primaria-claro)]'} />
             <span>Faça login para continuar</span>
@@ -94,7 +94,7 @@ export default function LoginScreen() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {error && (
-              <div className="flex items-center gap-2 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 px-3.5 py-2.5 rounded-md text-sm animate-[loginShake_0.4s_ease-out]">
+              <div className="flex items-center gap-2 bg-red-100 text-red-800 px-3.5 py-2.5 rounded-md text-sm animate-[loginShake_0.4s_ease-out]">
                 <Mail size={14} />
                 <span>{error}</span>
               </div>
@@ -106,7 +106,7 @@ export default function LoginScreen() {
               </label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="seu@email.com" autoComplete="email" required
-                className={`w-full px-3.5 py-2.5 border-2 rounded-md text-base outline-none transition-all duration-200 focus:border-[var(--cor-primaria)] focus:shadow-[0_0_0_4px_rgba(0,60,125,0.1)] ${dark ? 'bg-[#2a2a3e] border-[#3a3a4e] text-gray-100 placeholder-gray-500 focus:bg-[#2a2a3e]' : 'bg-gray-50 border-gray-300 text-gray-800 focus:bg-white'}`} />
+                className={`w-full px-3.5 py-2.5 border-2 rounded-md text-base outline-none transition-all duration-200 focus:border-[var(--cor-primaria)] focus:bg-white focus:shadow-[0_0_0_4px_rgba(0,60,125,0.1)] ${dark ? 'bg-[#2a2a3e] border-[#3a3a4e] text-gray-100 placeholder-gray-500' : 'bg-gray-50 border-gray-300 text-gray-800'}`} />
             </div>
 
             <div className="flex flex-col gap-1">
@@ -117,7 +117,7 @@ export default function LoginScreen() {
                 <input type={showPassword ? 'text' : 'password'} value={password}
                   onChange={e => setPassword(e.target.value)} placeholder="••••••••"
                   autoComplete="current-password" required
-                  className={`w-full px-3.5 py-2.5 pr-11 border-2 rounded-md text-base outline-none transition-all duration-200 focus:border-[var(--cor-primaria)] focus:shadow-[0_0_0_4px_rgba(0,60,125,0.1)] ${dark ? 'bg-[#2a2a3e] border-[#3a3a4e] text-gray-100 placeholder-gray-500 focus:bg-[#2a2a3e]' : 'bg-gray-50 border-gray-300 text-gray-800 focus:bg-white'}`} />
+                  className={`w-full px-3.5 py-2.5 pr-11 border-2 rounded-md text-base outline-none transition-all duration-200 focus:border-[var(--cor-primaria)] focus:bg-white focus:shadow-[0_0_0_4px_rgba(0,60,125,0.1)] ${dark ? 'bg-[#2a2a3e] border-[#3a3a4e] text-gray-100 placeholder-gray-500' : 'bg-gray-50 border-gray-300 text-gray-800'}`} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-2 text-gray-500 hover:text-[var(--cor-primaria)] p-2 rounded-md cursor-pointer">
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -135,9 +135,9 @@ export default function LoginScreen() {
             </button>
           </form>
 
-          <div className={`mt-4 pt-3.5 border-t ${dark ? 'border-[#2a2a3e]' : 'border-gray-200'} text-center`}>
-            <p className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'} mb-0.5`}><Shield size={12} className="text-green-600 inline mr-1" /> Ambiente Seguro • Sistema GECAV</p>
-            <p className={`text-[11px] ${dark ? 'text-gray-500' : 'text-gray-400'}`}>© 2026 - SEMUSA - Todos os direitos reservados</p>
+          <div className="mt-4 pt-3.5 border-t border-gray-200 text-center">
+            <p className="text-xs text-gray-500 mb-0.5"><Shield size={12} className="text-green-600 inline mr-1" /> Ambiente Seguro • Sistema GECAV</p>
+            <p className="text-[11px] text-gray-400">© 2026 - SEMUSA - Todos os direitos reservados</p>
           </div>
         </div>
       </div>

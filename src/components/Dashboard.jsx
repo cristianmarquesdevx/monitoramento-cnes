@@ -26,15 +26,17 @@ export default function Dashboard({ onNavigate }) {
   const [solicitacaoModal, setSolicitacaoModal] = useState(null);
   const [kpiModal, setKpiModal] = useState(null);
   const [relatoriosModal, setRelatoriosModal] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('cnesDark');
-    if (saved === null) return false;
-    return saved === 'true';
-  });
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('cnesDark') === 'true');
   const [notificacao, setNotificacao] = useState(null);
   const [periodoFiltro, setPeriodoFiltro] = useState('12');
   const [filtroDataInicio, setFiltroDataInicio] = useState('');
   const [filtroDataFim, setFiltroDataFim] = useState('');
+
+  const bgColor = darkMode ? 'bg-gray-900' : 'bg-gray-100';
+  const cardBg = darkMode ? 'bg-gray-800' : 'bg-white';
+  const textColor = darkMode ? 'text-gray-100' : 'text-gray-800';
+  const borderColor = darkMode ? 'border-gray-700' : 'border-gray-300';
+  const mutedText = darkMode ? 'text-gray-400' : 'text-gray-500';
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
@@ -72,6 +74,7 @@ export default function Dashboard({ onNavigate }) {
   const roleColors = { admin: 'bg-purple-100 text-purple-700 border-purple-300', editor: 'bg-blue-100 text-blue-700 border-blue-300', viewer: 'bg-gray-100 text-gray-600 border-gray-300' };
   const roleColor = roleColors[profile?.role] || roleColors.viewer;
 
+  // Filter profissionais by date range
   const profissionaisFiltrados = useMemo(() => {
     let lista = [...profissionais];
     if (unidadeFiltro !== '__todos__') lista = lista.filter(p => p.cnes === unidadeFiltro);
@@ -197,6 +200,7 @@ export default function Dashboard({ onNavigate }) {
     const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'profissionais.csv'; link.click();
   };
 
+  // Charts data with period filter
   const chartMensal = useMemo(() => {
     const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     const numMeses = parseInt(periodoFiltro) || 12;
@@ -246,49 +250,51 @@ export default function Dashboard({ onNavigate }) {
   const handleAprovacaoCompleta = () => { setSolicitacaoModal(null); recarregar(); };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
+    <div className={`min-h-screen ${bgColor} transition-colors duration-300`}>
+      {/* Realtime notification toast */}
       {notificacao && (
         <div className="fixed top-4 right-4 z-[9999] bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-[toastSlideIn_0.35s_ease-out] text-sm font-bold">
           <Bell size={16} /> {notificacao.msg}
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 border-b-2 border-[var(--cor-primaria)] transition-colors">
+      {/* Header */}
+      <div className={`${cardBg} border-b-2 border-[var(--cor-primaria)] transition-colors`}>
         <div className="flex items-center justify-between px-3 md:px-4 py-2.5 flex-wrap gap-2.5">
           <img src="/logo_prefeitura.png" alt="Prefeitura" className="h-[40px] md:h-[55px]" />
           <div className="flex-1 text-center min-w-[180px] md:min-w-[200px]">
-            <h2 className="text-[var(--cor-primaria)] text-[clamp(12px,2.5vw,18px)] font-bold leading-tight">PREFEITURA DO MUNICÍPIO DE PORTO VELHO</h2>
-            <h3 className="text-[var(--cor-primaria)] text-[clamp(10px,1.8vw,14px)]">SECRETARIA MUNICIPAL DE SAÚDE – SEMUSA</h3>
-            <h3 className="text-[var(--cor-primaria)] text-[clamp(10px,1.8vw,14px)]">DIVISÃO DE CONTROLE E AVALIAÇÃO DO SUS</h3>
+            <h2 className={`text-[var(--cor-primaria)] text-[clamp(12px,2.5vw,18px)] font-bold leading-tight`}>PREFEITURA DO MUNICÍPIO DE PORTO VELHO</h2>
+            <h3 className={`text-[var(--cor-primaria)] text-[clamp(10px,1.8vw,14px)]`}>SECRETARIA MUNICIPAL DE SAÚDE – SEMUSA</h3>
+            <h3 className={`text-[var(--cor-primaria)] text-[clamp(10px,1.8vw,14px)]`}>DIVISÃO DE CONTROLE E AVALIAÇÃO DO SUS</h3>
           </div>
           <img src="/logo_cnes.png" alt="CNES" className="h-[40px] md:h-[55px]" />
         </div>
         <div className="bg-[var(--cor-primaria)] text-white text-center py-2 px-3 font-bold text-[clamp(13px,2.5vw,17px)]">
           PLANILHA DE ATUALIZAÇÃO CADASTRAL DOS PROFISSIONAIS – CNES
         </div>
-        <div className="flex flex-wrap items-center justify-center md:justify-between px-3 md:px-4 py-2 border-t border-gray-300 dark:border-gray-700 text-[clamp(10px,1.6vw,13px)] gap-2 transition-colors">
+        <div className={`flex flex-wrap items-center justify-center md:justify-between px-3 md:px-4 py-2 border-t ${borderColor} text-[clamp(10px,1.6vw,13px)] gap-2 transition-colors`}>
           <div className="flex items-center gap-2 text-xs md:text-sm">
             <UserCircle size={16} className="text-[var(--cor-primaria)]" />
-            <span className="font-semibold text-gray-800 dark:text-gray-100 truncate max-w-[100px] md:max-w-[160px]">{nomeUsuario}</span>
+            <span className={`font-semibold ${textColor} truncate max-w-[100px] md:max-w-[160px]`}>{nomeUsuario}</span>
             <span className="text-gray-400 hidden sm:inline">&bull;</span>
-            <span className="text-gray-500 dark:text-gray-400 hidden sm:inline text-[11px] truncate max-w-[80px] md:max-w-none">{emailUsuario}</span>
+            <span className={`${mutedText} hidden sm:inline text-[11px] truncate max-w-[80px] md:max-w-none`}>{emailUsuario}</span>
             {roleLabel && <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${roleColor}`}>{roleLabel}</span>}
             {isAdmin && (
-              <button onClick={() => onNavigate?.('admin')} className="text-purple-600 hover:text-purple-800 p-1 rounded hover:bg-purple-50 dark:hover:bg-purple-900/30 cursor-pointer" title="Admin">
+              <button onClick={() => onNavigate?.('admin')} className="text-purple-600 hover:text-purple-800 p-1 rounded hover:bg-purple-50 cursor-pointer" title="Admin">
                 <Shield size={14} />
               </button>
             )}
-            <button onClick={() => onNavigate?.('audit')} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer" title="Auditoria">
+            <button onClick={() => onNavigate?.('audit')} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 cursor-pointer" title="Auditoria">
               <History size={14} />
             </button>
-            <button onClick={() => setDarkMode(!darkMode)} className="p-1.5 rounded cursor-pointer text-gray-500 hover:bg-gray-200 dark:text-yellow-400 dark:hover:bg-gray-700" title={darkMode ? 'Modo claro' : 'Modo escuro'}>
-              {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+            <button onClick={() => setDarkMode(!darkMode)} className={`p-1 rounded cursor-pointer ${darkMode ? 'text-yellow-400 hover:bg-gray-700' : 'text-gray-500 hover:bg-gray-200'}`} title={darkMode ? 'Modo claro' : 'Modo escuro'}>
+              {darkMode ? <Sun size={14} /> : <Moon size={14} />}
             </button>
           </div>
-          <input type="date" value={dataEmissao} onChange={e => setDataEmissao(e.target.value)} className="w-auto max-w-[150px] border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-xs md:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100" />
-          <div className="flex items-center gap-1.5 font-bold text-xs md:text-sm px-2 md:px-3 py-1 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-700">
+          <input type="date" value={dataEmissao} onChange={e => setDataEmissao(e.target.value)} className="w-auto max-w-[150px] border border-gray-300 rounded px-2 py-1 text-xs md:text-sm" />
+          <div className={`flex items-center gap-1.5 font-bold text-xs md:text-sm px-2 md:px-3 py-1 rounded-full ${cardBg} border-2 ${borderColor}`}>
             <span className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full inline-block ${realtimeAtivo ? 'bg-green-500 shadow-[0_0_6px_#28a745]' : 'bg-red-500 shadow-[0_0_6px_#dc3545]'}`} />
-            <span className="text-gray-800 dark:text-gray-100">{statusConexao}</span>
+            <span className={textColor}>{statusConexao}</span>
             {realtimeAtivo && <RefreshCw size={12} className="animate-spin text-yellow-500" />}
           </div>
           <button onClick={signOut} className="bg-red-500 hover:bg-red-600 text-white rounded-full px-3 md:px-4 py-1 text-[11px] md:text-xs font-bold flex items-center gap-1 transition-all hover:scale-105 cursor-pointer"><LogOut size={11} /> Sair</button>
@@ -296,58 +302,60 @@ export default function Dashboard({ onNavigate }) {
       </div>
 
       {loading ? (
-        <div className="bg-gray-50 dark:bg-gray-900 px-3 md:px-4 py-3 border-b-2 border-[var(--cor-primaria)]"><LoadingSkeleton /></div>
+        <div className="bg-gray-50 px-3 md:px-4 py-3 border-b-2 border-[var(--cor-primaria)]"><LoadingSkeleton /></div>
       ) : (
       <>
-      <div className="bg-gray-100 dark:bg-gray-900 px-3 md:px-4 py-3 border-b-2 border-[var(--cor-primaria)]">
+      {/* KPIs */}
+      <div className={`${bgColor} px-3 md:px-4 py-3 border-b-2 border-[var(--cor-primaria)]`}>
         <KPICards kpis={kpis} onKpiClick={handleKpiClick} />
         <TodayKPIs stats={todayStats} onKpiClick={handleTodayKpiClick} />
         <Suspense fallback={<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">{Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-white dark:bg-gray-800 rounded-md p-3 border border-gray-300 dark:border-gray-700 h-[200px] animate-pulse"><div className="h-3.5 w-28 bg-gray-200 dark:bg-gray-700 rounded mb-2" /><div className="h-[85%] flex items-end gap-1.5 px-2 pb-2">{Array.from({ length: 8 }).map((_, j) => <div key={j} className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-t" style={{ height: `${[60,75,45,80,55,70,50,65][j % 8]}%` }} />)}</div></div>
+          <div key={i} className="bg-white rounded-md p-3 border border-gray-300 h-[200px] animate-pulse"><div className="h-3.5 w-28 bg-gray-200 rounded mb-2" /><div className="h-[85%] flex items-end gap-1.5 px-2 pb-2">{Array.from({ length: 8 }).map((_, j) => <div key={j} className="flex-1 bg-gray-200 rounded-t" style={{ height: `${[60,75,45,80,55,70,50,65][j % 8]}%` }} />)}</div></div>
         ))}</div>}>
           <ChartsGrid chartMensal={chartMensal} chartCBO={chartCBO} chartCarga={chartCarga} />
         </Suspense>
 
+        {/* Period filter */}
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs font-bold text-gray-800 dark:text-gray-100">Período:</span>
-          <select value={periodoFiltro} onChange={e => setPeriodoFiltro(e.target.value)} className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100">
+          <span className={`text-xs font-bold ${textColor}`}>Período:</span>
+          <select value={periodoFiltro} onChange={e => setPeriodoFiltro(e.target.value)} className={`text-xs px-2 py-1 border ${borderColor} rounded ${cardBg} ${textColor}`}>
             <option value="3">Últimos 3 meses</option>
             <option value="6">Últimos 6 meses</option>
             <option value="12">Últimos 12 meses</option>
             <option value="24">Últimos 24 meses</option>
           </select>
-          <input type="date" value={filtroDataInicio} onChange={e => setFiltroDataInicio(e.target.value)} className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100" />
-          <span className="text-gray-500 dark:text-gray-400">até</span>
-          <input type="date" value={filtroDataFim} onChange={e => setFiltroDataFim(e.target.value)} className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100" />
+          <input type="date" value={filtroDataInicio} onChange={e => setFiltroDataInicio(e.target.value)} className={`text-xs px-2 py-1 border ${borderColor} rounded ${cardBg} ${textColor}`} />
+          <span className={mutedText}>até</span>
+          <input type="date" value={filtroDataFim} onChange={e => setFiltroDataFim(e.target.value)} className={`text-xs px-2 py-1 border ${borderColor} rounded ${cardBg} ${textColor}`} />
         </div>
 
         {multiLotacao.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-md p-2.5 border border-gray-300 dark:border-gray-700 mb-2 max-h-[160px] overflow-y-auto">
-            <h5 className="text-xs font-bold mb-1 text-gray-600 dark:text-gray-300"><Users size={12} className="inline mr-1" /> Profissionais com múltiplas lotações</h5>
+          <div className={`${cardBg} rounded-md p-2.5 border ${borderColor} mb-2 max-h-[160px] overflow-y-auto`}>
+            <h5 className={`text-xs font-bold mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}><Users size={12} className="inline mr-1" /> Profissionais com múltiplas lotações</h5>
             <ul className="space-y-0.5">{multiLotacao.map((p, i) => (
-              <li key={i} className="flex justify-between text-xs py-0.5 border-b border-gray-100 dark:border-gray-700">
-                <span className="text-gray-800 dark:text-gray-100">{p.nome}</span>
+              <li key={i} className={`flex justify-between text-xs py-0.5 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                <span className={textColor}>{p.nome}</span>
                 <span className="bg-[var(--cor-primaria)] text-white px-2 py-0.5 rounded-full text-[10px]">{p.unidades.size} unidades</span>
               </li>
             ))}</ul>
           </div>
         )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-md p-2.5 border border-gray-300 dark:border-gray-700 mb-2">
-          <h5 className="text-xs font-bold mb-1 text-gray-600 dark:text-gray-300"><AlertTriangle size={12} className="inline mr-1" /> Alertas</h5>
-          {alertas.length === 0 ? <div className="text-gray-500 dark:text-gray-400 text-xs">Nenhum alerta.</div> : alertas.map((a, i) => (
-            <div key={i} className={`text-xs py-1 px-2 mb-0.5 border-l-4 flex items-center gap-2 ${a.type === 'critical' ? 'border-l-red-500 bg-red-50 dark:bg-red-900/20' : 'border-l-yellow-400 bg-yellow-50 dark:bg-yellow-900/20'}`}><span>{a.msg}</span></div>
+        <div className={`${cardBg} rounded-md p-2.5 border ${borderColor} mb-2`}>
+          <h5 className={`text-xs font-bold mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}><AlertTriangle size={12} className="inline mr-1" /> Alertas</h5>
+          {alertas.length === 0 ? <div className={mutedText + ' text-xs'}>Nenhum alerta.</div> : alertas.map((a, i) => (
+            <div key={i} className={`text-xs py-1 px-2 mb-0.5 border-l-4 flex items-center gap-2 ${a.type === 'critical' ? 'border-l-red-500 bg-red-50' : 'border-l-yellow-400 bg-yellow-50'}`}><span>{a.msg}</span></div>
           ))}
         </div>
 
         {solicitacoes.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-md p-2.5 border border-gray-300 dark:border-gray-700 max-h-[180px] overflow-y-auto">
-            <h5 className="text-xs font-bold mb-1 text-gray-600 dark:text-gray-300"><Clock size={12} className="inline mr-1" /> Solicitações Pendentes</h5>
+          <div className={`${cardBg} rounded-md p-2.5 border ${borderColor} max-h-[180px] overflow-y-auto`}>
+            <h5 className={`text-xs font-bold mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}><Clock size={12} className="inline mr-1" /> Solicitações Pendentes</h5>
             {solicitacoes.map(sol => {
               const prof = profissionais.find(p => p.id === sol.profissional_id);
               return (
-                <div key={sol.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs py-1.5 border-b border-gray-100 dark:border-gray-700 gap-1">
-                  <span className="flex-1 text-gray-800 dark:text-gray-100"><strong>{sol.tipo === 'update' ? 'Alteração' : 'Exclusão'}</strong> - {prof?.nome_profissional || sol.dados_antigos?.nome_profissional || `ID ${sol.profissional_id}`} <span className="text-gray-500 dark:text-gray-400">{new Date(sol.criado_em).toLocaleString()}</span></span>
+                <div key={sol.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs py-1.5 border-b border-gray-100 gap-1">
+                  <span className="flex-1"><strong>{sol.tipo === 'update' ? 'Alteração' : 'Exclusão'}</strong> - {prof?.nome_profissional || sol.dados_antigos?.nome_profissional || `ID ${sol.profissional_id}`} <span className="text-gray-500">{new Date(sol.criado_em).toLocaleString()}</span></span>
                   <div className="flex gap-1 self-end sm:self-auto">
                     {isEditor ? (<><button onClick={() => setSolicitacaoModal(sol)} className="bg-green-500 hover:bg-green-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Aprovar</button>
                     <button onClick={async () => { if (window.confirm(`Rejeitar?`)) { await supabase.from('solicitacoes').update({ status: 'rejeitado' }).eq('id', sol.id); recarregar(); } }} className="bg-red-500 hover:bg-red-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Rejeitar</button></>) : (<span className="text-gray-400 text-[10px] italic">Apenas admin/editor</span>)}
@@ -359,10 +367,11 @@ export default function Dashboard({ onNavigate }) {
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 px-3 md:px-4 py-2.5 bg-gray-100 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700">
-        <label className="font-bold text-xs md:text-sm text-gray-800 dark:text-gray-100">Unidade:</label>
-        <input type="text" value={buscaUnidade} onChange={e => setBuscaUnidade(e.target.value)} placeholder="🔍 Buscar..." className="flex-1 min-w-[140px] md:min-w-[200px] px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded text-xs md:text-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100" />
-        <select value={unidadeFiltro} onChange={e => setUnidadeFiltro(e.target.value)} className="flex-1 min-w-[180px] md:min-w-[250px] px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded text-xs md:text-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100">
+      {/* Unit Selector */}
+      <div className={`flex flex-wrap items-center gap-2 px-3 md:px-4 py-2.5 ${bgColor} border-b ${borderColor}`}>
+        <label className={`font-bold text-xs md:text-sm ${textColor}`}>Unidade:</label>
+        <input type="text" value={buscaUnidade} onChange={e => setBuscaUnidade(e.target.value)} placeholder="🔍 Buscar..." className={`flex-1 min-w-[140px] md:min-w-[200px] px-2 py-1.5 border ${borderColor} rounded text-xs md:text-sm ${cardBg} ${textColor}`} />
+        <select value={unidadeFiltro} onChange={e => setUnidadeFiltro(e.target.value)} className={`flex-1 min-w-[180px] md:min-w-[250px] px-2 py-1.5 border ${borderColor} rounded text-xs md:text-sm ${cardBg} ${textColor}`}>
           <option value="__todos__">Todas as unidades</option>
           {unidadeOptions.map(u => <option key={u.cnes} value={u.cnes}>{u.cnes} - {u.nome_unidade}</option>)}
         </select>
@@ -372,40 +381,41 @@ export default function Dashboard({ onNavigate }) {
         <button onClick={exportarCSV} className="bg-green-500 hover:bg-green-600 text-white px-3 md:px-4 py-1.5 rounded font-bold text-xs md:text-sm flex items-center gap-1.5 cursor-pointer"><Download size={14} /> CSV</button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 px-3 md:px-4 py-2.5 bg-gray-100 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700">
-        <input type="text" value={buscaGlobal} onChange={e => setBuscaGlobal(e.target.value)} placeholder="🔍 Buscar por nome, CPF, CBO, cargo, vínculo, setor..." className="flex-1 min-w-[180px] md:min-w-[200px] px-2 md:px-3 py-2 border border-gray-300 dark:border-gray-700 rounded text-xs md:text-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100" />
-        <select value={filtroEspecialidade} onChange={e => setFiltroEspecialidade(e.target.value)} className="min-w-[110px] md:min-w-[130px] px-2 py-2 border border-gray-300 dark:border-gray-700 rounded text-xs md:text-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100">
+      {/* Global Search */}
+      <div className={`flex flex-wrap items-center gap-2 px-3 md:px-4 py-2.5 ${bgColor} border-b ${borderColor}`}>
+        <input type="text" value={buscaGlobal} onChange={e => setBuscaGlobal(e.target.value)} placeholder="🔍 Buscar por nome, CPF, CBO, cargo, vínculo, setor..." className={`flex-1 min-w-[180px] md:min-w-[200px] px-2 md:px-3 py-2 border ${borderColor} rounded text-xs md:text-sm ${cardBg} ${textColor}`} />
+        <select value={filtroEspecialidade} onChange={e => setFiltroEspecialidade(e.target.value)} className={`min-w-[110px] md:min-w-[130px] px-2 py-2 border ${borderColor} rounded text-xs md:text-sm ${cardBg} ${textColor}`}>
           <option value="todos">Todos</option>
           <option value="medico">Médico</option><option value="enfermeiro">Enfermeiro</option><option value="dentista">Dentista</option>
         </select>
-        <select value={filtroControle} onChange={e => setFiltroControle(e.target.value)} className="min-w-[120px] md:min-w-[140px] px-2 py-2 border border-gray-300 dark:border-gray-700 rounded text-xs md:text-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100">
+        <select value={filtroControle} onChange={e => setFiltroControle(e.target.value)} className={`min-w-[120px] md:min-w-[140px] px-2 py-2 border ${borderColor} rounded text-xs md:text-sm ${cardBg} ${textColor}`}>
           <option value="todos">Todos</option>
           <option value="pendentes">Pendentes</option>
           <option value="concluidos">Concluídos</option>
         </select>
-        <span className="text-xs md:text-sm text-gray-500 dark:text-gray-400">{loading ? <span className="inline-block w-16 h-4 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" /> : `${profissionaisFiltrados.length} encontrados`}</span>
+        <span className={`text-xs md:text-sm ${mutedText}`}>{loading ? <span className="inline-block w-16 h-4 bg-gray-200 animate-pulse rounded" /> : `${profissionaisFiltrados.length} encontrados`}</span>
         {isEditor && <button onClick={marcarTodosConcluidos} className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded font-bold text-[11px] md:text-xs flex items-center gap-1.5 cursor-pointer"><CheckCheck size={14} /> Concluir</button>}
       </div>
 
       <div className="bg-[var(--cor-primaria)] text-white px-3 md:px-4 py-1 font-bold text-xs md:text-sm">1. DADOS DA UNIDADE</div>
-      <div className="flex flex-wrap items-center gap-4 md:gap-8 px-3 md:px-5 py-3 bg-gray-100 dark:bg-gray-900 border-b-2 border-[var(--cor-primaria)]">
+      <div className={`flex flex-wrap items-center gap-4 md:gap-8 px-3 md:px-5 py-3 ${bgColor} border-b-2 border-[var(--cor-primaria)]`}>
         <div className="flex items-center gap-2 text-sm md:text-base">
           <span className="font-bold text-[var(--cor-primaria)]">CNES:</span>
-          <span className="font-bold text-base md:text-lg text-[var(--cor-primaria)] bg-gray-200 dark:bg-gray-700 px-2 md:px-3 py-1 rounded border-2 border-[var(--cor-primaria)]">{unidadeSelecionada?.cnes || '--'}</span>
+          <span className="font-bold text-base md:text-lg text-[var(--cor-primaria)] bg-gray-200 px-2 md:px-3 py-1 rounded border-2 border-[var(--cor-primaria)]">{unidadeSelecionada?.cnes || '--'}</span>
         </div>
         <div className="flex items-center gap-2 text-sm md:text-base">
           <span className="font-bold text-[var(--cor-primaria)]">Unidade:</span>
-          <span className="font-bold text-base md:text-lg text-[var(--cor-primaria)] bg-gray-200 dark:bg-gray-700 px-2 md:px-3 py-1 rounded border-2 border-[var(--cor-primaria)]">{unidadeSelecionada?.nome_unidade || '--'}</span>
+          <span className="font-bold text-base md:text-lg text-[var(--cor-primaria)] bg-gray-200 px-2 md:px-3 py-1 rounded border-2 border-[var(--cor-primaria)]">{unidadeSelecionada?.nome_unidade || '--'}</span>
         </div>
       </div>
 
       <div className="bg-[var(--cor-primaria)] text-white px-3 md:px-4 py-1 font-bold text-xs md:text-sm">2. RELAÇÃO DOS PROFISSIONAIS</div>
       <ProfessionalsTable profissionaisFiltrados={profissionaisFiltrados} onMarcarConcluido={marcarConcluido} getCboDesc={getCboDesc} />
 
-      <div className="mt-auto bg-gray-100 dark:bg-gray-900 border-t-2 border-[var(--cor-primaria)] px-3 md:px-5 py-4 text-center text-[11px] md:text-xs text-gray-800 dark:text-gray-100">
+      <div className={`mt-auto ${bgColor} border-t-2 border-[var(--cor-primaria)] px-3 md:px-5 py-4 text-center text-[11px] md:text-xs ${textColor}`}>
         <p className="my-0.5">Desenvolvido por Cristian Marques</p>
         <p className="my-0.5">SEMUSA - Secretaria Municipal de Saúde de Porto Velho</p>
-        <p className="text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400">&copy; 2026 - Todos os direitos reservados</p>
+        <p className={`text-[10px] md:text-[11px] ${mutedText}`}>&copy; 2026 - Todos os direitos reservados</p>
       </div>
       </>
       )}

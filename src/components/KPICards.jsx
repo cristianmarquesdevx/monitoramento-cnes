@@ -30,12 +30,12 @@ export default function KPICards({ kpis, onKpiClick }) {
             tabIndex={clicavel ? 0 : undefined}
             role={clicavel ? 'button' : undefined}
             aria-label={clicavel ? `${item.label}: ${exibe} - Clique para ver detalhes` : undefined}
-            className={`flex-1 min-w-[120px] bg-white dark:bg-gray-800 border-l-4 ${item.color} rounded-md px-3 py-2.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${clicavel ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--cor-primaria)] focus:ring-offset-1 dark:focus:ring-offset-gray-900' : 'cursor-default'}`}
+            className={`flex-1 min-w-[120px] bg-white border-l-4 ${item.color} rounded-md px-3 py-2.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${clicavel ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--cor-primaria)] focus:ring-offset-1' : 'cursor-default'}`}
             title={`${item.label}: ${exibe}${clicavel ? ' — Clique para detalhes' : ''}`}>
-            <div className="text-gray-500 dark:text-gray-400 text-[11px] font-semibold flex items-center gap-1">
+            <div className="text-gray-500 text-[11px] font-semibold flex items-center gap-1">
               <Icon size={12} /> {item.label}
             </div>
-            <div className="text-[var(--cor-primaria)] dark:text-[#8ab4f8] text-xl font-bold">{exibe}</div>
+            <div className="text-[var(--cor-primaria)] text-xl font-bold">{exibe}</div>
           </div>
         );
       })}
