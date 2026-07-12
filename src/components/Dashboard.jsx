@@ -101,6 +101,47 @@ export default function Dashboard() {
     return { inclusoesHoje, alteracoesHoje, exclusoesHoje, pendentesHoje, aprovadosHoje, alertasCriticos };
   }, [profissionais, solicitacoes]);
 
+  // Today KPI click handler - abre modal com profissionais do dia
+  const handleTodayKpiClick = useCallback((kpiKey) => {
+    const hoje = new Date().toISOString().split('T')[0];
+    let lista = [];
+    let titulo = '';
+
+    switch (kpiKey) {
+      case 'inclusoesHoje':
+        lista = profissionais.filter(p => p.created_at?.startsWith(hoje));
+        titulo = `Inclusões Hoje (${lista.length})`;
+        break;
+      case 'alteracoesHoje':
+        const altSol = solicitacoes.filter(s => s.tipo === 'update' && s.criado_em?.startsWith(hoje));
+        lista = profissionais.filter(p => altSol.some(s => s.profissional_id === p.id));
+        titulo = `Alterações Hoje (${altSol.length} solicitações)`;
+        break;
+      case 'exclusoesHoje':
+        const excSol = solicitacoes.filter(s => s.tipo === 'delete' && s.criado_em?.startsWith(hoje));
+        lista = profissionais.filter(p => excSol.some(s => s.profissional_id === p.id));
+        titulo = `Exclusões Hoje (${excSol.length} solicitações)`;
+        break;
+      case 'pendentesHoje':
+        const penSol = solicitacoes.filter(s => s.status === 'pendente' && s.criado_em?.startsWith(hoje));
+        lista = profissionais.filter(p => penSol.some(s => s.profissional_id === p.id));
+        titulo = `Pendentes Hoje (${penSol.length} solicitações)`;
+        break;
+      case 'aprovadosHoje':
+        const aprSol = solicitacoes.filter(s => s.status === 'aprovado' && s.aprovado_em?.startsWith(hoje));
+        lista = profissionais.filter(p => aprSol.some(s => s.profissional_id === p.id));
+        titulo = `Aprovados Hoje (${aprSol.length} solicitações)`;
+        break;
+      case 'alertasCriticos':
+        lista = profissionais.filter(p => !p.cbo || !p.cpf);
+        titulo = `Alertas Críticos (${lista.length})`;
+        break;
+      default:
+        return;
+    }
+    setKpiModal({ titulo, lista });
+  }, [profissionais, solicitacoes]);
+
   // KPI click handler - abre modal com profissionais filtrados
   const handleKpiClick = useCallback((kpiKey) => {
     const hoje = new Date().toISOString().split('T')[0];
@@ -320,7 +361,7 @@ export default function Dashboard() {
       {/* KPIs */}
       <div className="bg-gray-50 px-4 py-3 border-b-2 border-[var(--cor-primaria)]">
         <KPICards kpis={kpis} onKpiClick={handleKpiClick} />
-        <TodayKPIs stats={todayStats} />
+        <TodayKPIs stats={todayStats} onKpiClick={handleTodayKpiClick} />
         <Suspense fallback={<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">{Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="bg-white rounded-md p-3 border border-gray-300 h-[200px] animate-pulse">
             <div className="h-3.5 w-28 bg-gray-200 rounded mb-2" />

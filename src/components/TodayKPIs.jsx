@@ -9,16 +9,22 @@ const ITENS = [
   { key: 'alertasCriticos', label: 'Alertas críticos', icon: AlertTriangle, color: 'text-orange-600 bg-orange-50 border-orange-300' },
 ];
 
-export default function TodayKPIs({ stats }) {
+export default function TodayKPIs({ stats, onKpiClick }) {
   return (
     <div className="flex flex-wrap gap-1.5 mb-2">
       {ITENS.map(item => {
         const Icon = item.icon;
         const valor = stats[item.key] ?? 0;
+        const clicavel = !!onKpiClick;
         return (
           <div key={item.key}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-semibold ${item.color}`}
-            title={`${item.label}: ${valor}`}>
+            onClick={clicavel ? () => onKpiClick(item.key) : undefined}
+            onKeyDown={clicavel ? (e) => { if (e.key === 'Enter' || e.key === ' ') onKpiClick(item.key); } : undefined}
+            tabIndex={clicavel ? 0 : undefined}
+            role={clicavel ? 'button' : undefined}
+            aria-label={clicavel ? `${item.label}: ${valor} - Clique para ver detalhes` : undefined}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-semibold ${item.color} ${clicavel ? 'cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--cor-primaria)] focus:ring-offset-1' : ''}`}
+            title={`${item.label}: ${valor}${clicavel ? ' — Clique para detalhes' : ''}`}>
             <Icon size={12} />
             <span>{item.label}</span>
             <span className="ml-0.5 font-bold text-sm">{valor}</span>

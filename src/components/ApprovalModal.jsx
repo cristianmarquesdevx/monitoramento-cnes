@@ -15,7 +15,7 @@ const opcoesVinculo = [
 const CAMPOS = [
   { key: 'nome_profissional', label: 'Nome Completo' },
   { key: 'cpf', label: 'CPF' },
-  { key: 'cnes', label: 'CNES', type: 'select', optionsKey: 'unidades' },
+  { key: 'cnes', label: 'CNES', type: 'select', optionsKey: 'cnes' },
   { key: 'cbo', label: 'CBO', type: 'select', optionsKey: 'cbo' },
   { key: 'conselho', label: 'Conselho' },
   { key: 'registro', label: 'N° Registro' },
@@ -28,7 +28,7 @@ const CAMPOS = [
 
 function formatValor(key, value, unidades) {
   if (!value && value !== 0) return '—';
-  if (key === 'cnes' && unidades.length > 0) {
+  if (key === 'cnes' && unidades?.length > 0) {
     const uni = unidades.find(u => u.cnes === value);
     return uni ? `${uni.cnes} - ${uni.nome_unidade}` : value;
   }
@@ -40,7 +40,7 @@ function formatValor(key, value, unidades) {
 }
 
 function getOptions(key, unidades) {
-  if (key === 'cnes') return unidades.map(u => ({ value: u.cnes, text: `${u.cnes} - ${u.nome_unidade}` }));
+  if (key === 'cnes') return (unidades || []).map(u => ({ value: u.cnes, text: `${u.cnes} - ${u.nome_unidade}` }));
   if (key === 'cbo') return listaCBO.map(c => ({ value: c.codigo, text: `${c.codigo} - ${c.descricao}` }));
   if (key === 'vinculo') return opcoesVinculo.map(v => ({ value: v, text: v }));
   return [];
@@ -158,14 +158,14 @@ export default function ApprovalModal({ isOpen, onClose, solicitacao, unidades, 
             Revise os dados antes de confirmar a alteração. Campos com <span className="bg-yellow-200 px-1.5 py-0.5 rounded text-xs font-semibold">destaque amarelo</span> serão alterados.
           </p>
 
-          {/* Side-by-side comparison — always editable on the right */}
+          {/* Side-by-side comparison — without scrollbars */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Left: Dados Atuais (read-only) */}
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="bg-gray-100 px-3 py-2 font-bold text-sm text-gray-700 border-b border-gray-200">
                 Dados Atuais
               </div>
-              <div className="divide-y divide-gray-100 max-h-[420px] overflow-y-auto">
+              <div className="divide-y divide-gray-100">
                 {CAMPOS.map(campo => (
                   <div key={campo.key} className="flex items-start px-3 py-2 min-h-[32px]">
                     <span className="text-xs text-gray-500 w-28 shrink-0 pt-0.5">{campo.label}</span>
@@ -182,7 +182,7 @@ export default function ApprovalModal({ isOpen, onClose, solicitacao, unidades, 
               <div className="bg-[var(--cor-primaria-claro)] px-3 py-2 font-bold text-sm text-[var(--cor-primaria)] border-b border-gray-200">
                 Novos Dados (editáveis)
               </div>
-              <div className="divide-y divide-gray-100 max-h-[420px] overflow-y-auto">
+              <div className="divide-y divide-gray-100">
                 {CAMPOS.map(campo => {
                   const alterado = campoAlterado(campo.key);
                   const valorAtual = editData[campo.key] ?? '';
@@ -192,11 +192,12 @@ export default function ApprovalModal({ isOpen, onClose, solicitacao, unidades, 
                     const options = getOptions(campo.optionsKey, unidades);
                     return (
                       <div key={campo.key}
-                        className={`flex items-start px-3 py-2 min-h-[32px] ${alterado ? 'bg-yellow-50' : ''}`}
-                        title={alterado ? `Original: ${valorAntigo || 'vazio'}` : ''}>
-                        <span className="text-xs text-gray-500 w-28 shrink-0 pt-1">{campo.label}</span>
+                        className={`flex items-start px-3 py-2.5 min-h-[36px] ${alterado ? 'bg-yellow-100 border-l-4 border-yellow-400' : ''}`}
+                        title={alterado ? `Original: ${valorAntigo || 'vazio'} → Novo: ${valorAtual || 'vazio'}` : ''}>
+                        {alterado && <span className="text-yellow-600 mr-1 text-xs shrink-0 pt-1 font-bold" aria-hidden="true" title="Campo alterado">⚠️</span>}
+                        <span className="text-xs text-gray-500 w-24 shrink-0 pt-1">{campo.label}</span>
                         <select value={valorAtual} onChange={e => handleChange(campo.key, e.target.value)}
-                          className={`flex-1 text-sm border rounded px-2 py-1 ${alterado ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'}`}>
+                          className={`flex-1 text-sm border rounded px-2 py-1 ${alterado ? 'border-yellow-500 bg-yellow-50 font-bold' : 'border-gray-300'}`}>
                           <option value="">Selecione...</option>
                           {options.map(opt => (
                             <option key={opt.value} value={opt.value}>{opt.text}</option>
@@ -208,12 +209,13 @@ export default function ApprovalModal({ isOpen, onClose, solicitacao, unidades, 
 
                   return (
                     <div key={campo.key}
-                      className={`flex items-start px-3 py-2 min-h-[32px] ${alterado ? 'bg-yellow-50' : ''}`}
-                      title={alterado ? `Original: ${valorAntigo || 'vazio'}` : ''}>
-                      <span className="text-xs text-gray-500 w-28 shrink-0 pt-1">{campo.label}</span>
+                      className={`flex items-start px-3 py-2.5 min-h-[36px] ${alterado ? 'bg-yellow-100 border-l-4 border-yellow-400' : ''}`}
+                      title={alterado ? `Original: ${valorAntigo || 'vazio'} → Novo: ${valorAtual || 'vazio'}` : ''}>
+                      {alterado && <span className="text-yellow-600 mr-1 text-xs shrink-0 pt-1 font-bold" aria-hidden="true" title="Campo alterado">⚠️</span>}
+                      <span className="text-xs text-gray-500 w-24 shrink-0 pt-1">{campo.label}</span>
                       <input type="text" value={valorAtual}
                         onChange={e => handleChange(campo.key, e.target.value)}
-                        className={`flex-1 text-sm border rounded px-2 py-1 ${alterado ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'}`} />
+                        className={`flex-1 text-sm border rounded px-2 py-1 ${alterado ? 'border-yellow-500 bg-yellow-50 font-bold' : 'border-gray-300'}`} />
                     </div>
                   );
                 })}
