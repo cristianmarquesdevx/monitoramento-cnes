@@ -1,12 +1,16 @@
+import { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { ToastProvider } from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoginScreen from './components/LoginScreen';
 import Dashboard from './components/Dashboard';
+import AdminUsers from './components/AdminUsers';
+import AuditLog from './components/AuditLog';
 
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, profile } = useAuth();
+  const [page, setPage] = useState('dashboard');
 
   if (loading) {
     return (
@@ -22,10 +26,20 @@ function AppContent() {
 
   if (!user) return <LoginScreen />;
 
+  const isAdmin = profile?.role === 'admin';
+
+  if (page === 'admin' && isAdmin) {
+    return <AdminUsers onBack={() => setPage('dashboard')} />;
+  }
+
+  if (page === 'audit') {
+    return <AuditLog onBack={() => setPage('dashboard')} />;
+  }
+
   return (
     <ErrorBoundary>
       <DataProvider>
-        <Dashboard />
+        <Dashboard onNavigate={setPage} />
       </DataProvider>
     </ErrorBoundary>
   );
