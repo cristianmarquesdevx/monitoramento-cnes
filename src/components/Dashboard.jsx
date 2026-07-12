@@ -18,7 +18,7 @@ const PrintFicha = lazy(() => import('./PrintFicha'));
 
 export default function Dashboard() {
   const { unidades, profissionais, solicitacoes, loading, recarregar } = useData();
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut, isAdmin, isEditor } = useAuth();
   const [unidadeFiltro, setUnidadeFiltro] = useState('__todos__');
   const [buscaUnidade, setBuscaUnidade] = useState('');
   const [buscaGlobal, setBuscaGlobal] = useState('');
@@ -37,9 +37,12 @@ export default function Dashboard() {
   const statusConexao = 'Conectado';
   const [realtimeAtivo, setRealtimeAtivo] = useState(false);
 
-  // User display name
-  const nomeUsuario = user?.user_metadata?.nome || user?.email?.split('@')[0] || 'Usuário';
+  // User display name and role
+  const nomeUsuario = profile?.nome || user?.user_metadata?.nome || user?.email?.split('@')[0] || 'Usuário';
   const emailUsuario = user?.email || '';
+  const roleLabel = profile?.role === 'admin' ? 'Administrador' : profile?.role === 'editor' ? 'Editor' : profile?.role === 'viewer' ? 'Visualizador' : '';
+  const roleColors = { admin: 'bg-purple-100 text-purple-700 border-purple-300', editor: 'bg-blue-100 text-blue-700 border-blue-300', viewer: 'bg-gray-100 text-gray-600 border-gray-300' };
+  const roleColor = roleColors[profile?.role] || roleColors.viewer;
 
   // Realtime subscription
   useEffect(() => {
@@ -346,9 +349,14 @@ export default function Dashboard() {
         <div className="flex flex-wrap items-center justify-center md:justify-between px-3 md:px-4 py-2 border-t border-gray-300 text-[clamp(10px,1.6vw,13px)] gap-2">
           <div className="flex items-center gap-2 text-xs md:text-sm">
             <UserCircle size={16} className="text-[var(--cor-primaria)]" />
-            <span className="font-semibold text-gray-700 truncate max-w-[120px] md:max-w-none">{nomeUsuario}</span>
+            <span className="font-semibold text-gray-700 truncate max-w-[100px] md:max-w-[160px]">{nomeUsuario}</span>
             <span className="text-gray-400 hidden sm:inline">•</span>
-            <span className="text-gray-500 hidden sm:inline text-[11px]">{emailUsuario}</span>
+            <span className="text-gray-500 hidden sm:inline text-[11px] truncate max-w-[80px] md:max-w-none">{emailUsuario}</span>
+            {roleLabel && (
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${roleColor}`}>
+                {roleLabel}
+              </span>
+            )}
           </div>
           <input type="date" value={dataEmissao} onChange={e => setDataEmissao(e.target.value)}
             className="w-auto max-w-[150px] border border-gray-300 rounded px-2 py-1 text-xs md:text-sm" />
@@ -422,13 +430,19 @@ export default function Dashboard() {
                 <div key={sol.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs py-1.5 border-b border-gray-100 gap-1">
                   <span className="flex-1"><strong>{sol.tipo === 'update' ? 'Alteração' : 'Exclusão'}</strong> - {prof?.nome_profissional || sol.dados_antigos?.nome_profissional || `ID ${sol.profissional_id}`} <span className="text-gray-500">{new Date(sol.criado_em).toLocaleString()}</span></span>
                   <div className="flex gap-1 self-end sm:self-auto">
-                    <button onClick={() => setSolicitacaoModal(sol)} className="bg-green-500 hover:bg-green-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Aprovar</button>
-                    <button onClick={async () => {
-                      if (window.confirm(`Rejeitar solicitação de ${sol.tipo === 'update' ? 'alteração' : 'exclusão'}?`)) {
-                        await supabase.from('solicitacoes').update({ status: 'rejeitado' }).eq('id', sol.id);
-                        recarregar();
-                      }
-                    }} className="bg-red-500 hover:bg-red-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Rejeitar</button>
+                    {isEditor ? (
+                      <>
+                        <button onClick={() => setSolicitacaoModal(sol)} className="bg-green-500 hover:bg-green-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Aprovar</button>
+                        <button onClick={async () => {
+                          if (window.confirm(`Rejeitar solicitação de ${sol.tipo === 'update' ? 'alteração' : 'exclusão'}?`)) {
+                            await supabase.from('solicitacoes').update({ status: 'rejeitado' }).eq('id', sol.id);
+                            recarregar();
+                          }
+                        }} className="bg-red-500 hover:bg-red-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Rejeitar</button>
+                      </>
+                    ) : (
+                      <span className="text-gray-400 text-[10px] italic">Apenas admin/editor</span>
+                    )}
                   </div>
                 </div>
               );
@@ -471,9 +485,11 @@ export default function Dashboard() {
           <option value="concluidos">Concluídos</option>
         </select>
         <span className="text-xs md:text-sm text-gray-500">{loading ? <span className="inline-block w-16 h-4 bg-gray-200 animate-pulse rounded" /> : `${profissionaisFiltrados.length} encontrados`}</span>
-        <button onClick={marcarTodosConcluidos} className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded font-bold text-[11px] md:text-xs flex items-center gap-1.5 cursor-pointer">
-          <CheckCheck size={14} /> Concluir
-        </button>
+        {isEditor && (
+          <button onClick={marcarTodosConcluidos} className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded font-bold text-[11px] md:text-xs flex items-center gap-1.5 cursor-pointer">
+            <CheckCheck size={14} /> Concluir
+          </button>
+        )}
       </div>
 
       {/* Section: Dados da Unidade */}
