@@ -18,7 +18,7 @@ const PrintFicha = lazy(() => import('./PrintFicha'));
 
 export default function Dashboard() {
   const { unidades, profissionais, solicitacoes, loading, recarregar } = useData();
-  const { user, profile, signOut, isAdmin, isEditor } = useAuth();
+  const { user, profile, signOut, isEditor } = useAuth();
   const [unidadeFiltro, setUnidadeFiltro] = useState('__todos__');
   const [buscaUnidade, setBuscaUnidade] = useState('');
   const [buscaGlobal, setBuscaGlobal] = useState('');
