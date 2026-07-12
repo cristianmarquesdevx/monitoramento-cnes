@@ -28,7 +28,7 @@ export default function Dashboard({ onNavigate }) {
   const [relatoriosModal, setRelatoriosModal] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('cnesDark');
-    if (saved === null) return false; // Default: MODO CLARO
+    if (saved === null) return false;
     return saved === 'true';
   });
   const [notificacao, setNotificacao] = useState(null);
@@ -72,7 +72,6 @@ export default function Dashboard({ onNavigate }) {
   const roleColors = { admin: 'bg-purple-100 text-purple-700 border-purple-300', editor: 'bg-blue-100 text-blue-700 border-blue-300', viewer: 'bg-gray-100 text-gray-600 border-gray-300' };
   const roleColor = roleColors[profile?.role] || roleColors.viewer;
 
-  // Filter profissionais by date range
   const profissionaisFiltrados = useMemo(() => {
     let lista = [...profissionais];
     if (unidadeFiltro !== '__todos__') lista = lista.filter(p => p.cnes === unidadeFiltro);
@@ -198,7 +197,6 @@ export default function Dashboard({ onNavigate }) {
     const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'profissionais.csv'; link.click();
   };
 
-  // Charts data with period filter
   const chartMensal = useMemo(() => {
     const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     const numMeses = parseInt(periodoFiltro) || 12;
@@ -249,14 +247,12 @@ export default function Dashboard({ onNavigate }) {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-      {/* Realtime notification toast */}
       {notificacao && (
         <div className="fixed top-4 right-4 z-[9999] bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-[toastSlideIn_0.35s_ease-out] text-sm font-bold">
           <Bell size={16} /> {notificacao.msg}
         </div>
       )}
 
-      {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b-2 border-[var(--cor-primaria)] transition-colors">
         <div className="flex items-center justify-between px-3 md:px-4 py-2.5 flex-wrap gap-2.5">
           <img src="/logo_prefeitura.png" alt="Prefeitura" className="h-[40px] md:h-[55px]" />
@@ -303,7 +299,6 @@ export default function Dashboard({ onNavigate }) {
         <div className="bg-gray-50 dark:bg-gray-900 px-3 md:px-4 py-3 border-b-2 border-[var(--cor-primaria)]"><LoadingSkeleton /></div>
       ) : (
       <>
-      {/* KPIs */}
       <div className="bg-gray-100 dark:bg-gray-900 px-3 md:px-4 py-3 border-b-2 border-[var(--cor-primaria)]">
         <KPICards kpis={kpis} onKpiClick={handleKpiClick} />
         <TodayKPIs stats={todayStats} onKpiClick={handleTodayKpiClick} />
@@ -313,7 +308,6 @@ export default function Dashboard({ onNavigate }) {
           <ChartsGrid chartMensal={chartMensal} chartCBO={chartCBO} chartCarga={chartCarga} />
         </Suspense>
 
-        {/* Period filter */}
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xs font-bold text-gray-800 dark:text-gray-100">Período:</span>
           <select value={periodoFiltro} onChange={e => setPeriodoFiltro(e.target.value)} className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100">
@@ -365,7 +359,6 @@ export default function Dashboard({ onNavigate }) {
         )}
       </div>
 
-      {/* Unit Selector */}
       <div className="flex flex-wrap items-center gap-2 px-3 md:px-4 py-2.5 bg-gray-100 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700">
         <label className="font-bold text-xs md:text-sm text-gray-800 dark:text-gray-100">Unidade:</label>
         <input type="text" value={buscaUnidade} onChange={e => setBuscaUnidade(e.target.value)} placeholder="🔍 Buscar..." className="flex-1 min-w-[140px] md:min-w-[200px] px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded text-xs md:text-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100" />
@@ -379,7 +372,6 @@ export default function Dashboard({ onNavigate }) {
         <button onClick={exportarCSV} className="bg-green-500 hover:bg-green-600 text-white px-3 md:px-4 py-1.5 rounded font-bold text-xs md:text-sm flex items-center gap-1.5 cursor-pointer"><Download size={14} /> CSV</button>
       </div>
 
-      {/* Global Search */}
       <div className="flex flex-wrap items-center gap-2 px-3 md:px-4 py-2.5 bg-gray-100 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700">
         <input type="text" value={buscaGlobal} onChange={e => setBuscaGlobal(e.target.value)} placeholder="🔍 Buscar por nome, CPF, CBO, cargo, vínculo, setor..." className="flex-1 min-w-[180px] md:min-w-[200px] px-2 md:px-3 py-2 border border-gray-300 dark:border-gray-700 rounded text-xs md:text-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100" />
         <select value={filtroEspecialidade} onChange={e => setFiltroEspecialidade(e.target.value)} className="min-w-[110px] md:min-w-[130px] px-2 py-2 border border-gray-300 dark:border-gray-700 rounded text-xs md:text-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100">
@@ -430,16 +422,6 @@ export default function Dashboard({ onNavigate }) {
       <Suspense fallback={null}>
         <PrintFicha profissionais={profissionaisFiltrados} unidade={unidadeSelecionada} dataEmissao={dataEmissao} getCboDesc={getCboDesc} />
       </Suspense>
-
-      {/* Floating theme toggle button - SEMPRE VISIVEL */}
-      <button onClick={() => setDarkMode(!darkMode)}
-        className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2.5 px-5 py-3.5 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 cursor-pointer border-2 group
-          bg-white text-gray-700 border-gray-300 hover:bg-gray-100 hover:shadow-2xl
-          dark:bg-gray-800 dark:text-yellow-400 dark:border-gray-600 dark:hover:bg-gray-700"
-        title={darkMode ? 'Mudar para modo claro' : 'Mudar para modo escuro'}>
-        {darkMode ? <Sun size={24} className="transition-transform duration-500 rotate-0" /> : <Moon size={24} />}
-        <span className="text-sm font-bold">{darkMode ? 'Modo Claro' : 'Modo Escuro'}</span>
-      </button>
     </div>
   );
 }
