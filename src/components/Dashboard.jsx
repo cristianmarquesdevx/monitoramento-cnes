@@ -26,7 +26,11 @@ export default function Dashboard({ onNavigate }) {
   const [solicitacaoModal, setSolicitacaoModal] = useState(null);
   const [kpiModal, setKpiModal] = useState(null);
   const [relatoriosModal, setRelatoriosModal] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('cnesDark') === 'true');
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('cnesDark');
+    if (saved === null) return false; // Default: MODO CLARO
+    return saved === 'true';
+  });
   const [notificacao, setNotificacao] = useState(null);
   const [periodoFiltro, setPeriodoFiltro] = useState('12');
   const [filtroDataInicio, setFiltroDataInicio] = useState('');
@@ -281,8 +285,8 @@ export default function Dashboard({ onNavigate }) {
             <button onClick={() => onNavigate?.('audit')} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer" title="Auditoria">
               <History size={14} />
             </button>
-            <button onClick={() => setDarkMode(!darkMode)} className="p-1 rounded cursor-pointer text-gray-500 hover:bg-gray-200 dark:text-yellow-400 dark:hover:bg-gray-700" title={darkMode ? 'Modo claro' : 'Modo escuro'}>
-              {darkMode ? <Sun size={14} /> : <Moon size={14} />}
+            <button onClick={() => setDarkMode(!darkMode)} className="p-1.5 rounded cursor-pointer text-gray-500 hover:bg-gray-200 dark:text-yellow-400 dark:hover:bg-gray-700" title={darkMode ? 'Modo claro' : 'Modo escuro'}>
+              {darkMode ? <Sun size={16} /> : <Moon size={16} />}
             </button>
           </div>
           <input type="date" value={dataEmissao} onChange={e => setDataEmissao(e.target.value)} className="w-auto max-w-[150px] border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-xs md:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100" />
@@ -426,6 +430,16 @@ export default function Dashboard({ onNavigate }) {
       <Suspense fallback={null}>
         <PrintFicha profissionais={profissionaisFiltrados} unidade={unidadeSelecionada} dataEmissao={dataEmissao} getCboDesc={getCboDesc} />
       </Suspense>
+
+      {/* Floating theme toggle button - SEMPRE VISIVEL */}
+      <button onClick={() => setDarkMode(!darkMode)}
+        className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2.5 px-5 py-3.5 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 cursor-pointer border-2 group
+          bg-white text-gray-700 border-gray-300 hover:bg-gray-100 hover:shadow-2xl
+          dark:bg-gray-800 dark:text-yellow-400 dark:border-gray-600 dark:hover:bg-gray-700"
+        title={darkMode ? 'Mudar para modo claro' : 'Mudar para modo escuro'}>
+        {darkMode ? <Sun size={24} className="transition-transform duration-500 rotate-0" /> : <Moon size={24} />}
+        <span className="text-sm font-bold">{darkMode ? 'Modo Claro' : 'Modo Escuro'}</span>
+      </button>
     </div>
   );
 }
