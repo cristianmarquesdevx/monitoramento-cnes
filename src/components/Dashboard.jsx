@@ -7,7 +7,7 @@ import LoadingSkeleton from './Skeleton';
 import KPICards from './KPICards';
 import ProfessionalsTable from './ProfessionalsTable';
 import TodayKPIs from './TodayKPIs';
-import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3 } from 'lucide-react';
+import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3, UserCircle } from 'lucide-react';
 
 // Lazy-loaded components (code-splitting)
 const ChartsGrid = lazy(() => import('./ChartsGrid'));
@@ -18,14 +18,14 @@ const PrintFicha = lazy(() => import('./PrintFicha'));
 
 export default function Dashboard() {
   const { unidades, profissionais, solicitacoes, loading, recarregar } = useData();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [unidadeFiltro, setUnidadeFiltro] = useState('__todos__');
   const [buscaUnidade, setBuscaUnidade] = useState('');
   const [buscaGlobal, setBuscaGlobal] = useState('');
   const [filtroEspecialidade, setFiltroEspecialidade] = useState('todos');
   const [filtroControle, setFiltroControle] = useState('todos');
   const [solicitacaoModal, setSolicitacaoModal] = useState(null);
-  const [kpiModal, setKpiModal] = useState(null); // { titulo, lista }
+  const [kpiModal, setKpiModal] = useState(null);
   const [relatoriosModal, setRelatoriosModal] = useState(false);
   // Load data on mount
   useEffect(() => {
@@ -36,6 +36,10 @@ export default function Dashboard() {
   const [dataEmissao, setDataEmissao] = useState(hoje);
   const statusConexao = 'Conectado';
   const [realtimeAtivo, setRealtimeAtivo] = useState(false);
+
+  // User display name
+  const nomeUsuario = user?.user_metadata?.nome || user?.email?.split('@')[0] || 'Usuário';
+  const emailUsuario = user?.email || '';
 
   // Realtime subscription
   useEffect(() => {
@@ -100,7 +104,7 @@ export default function Dashboard() {
     return { inclusoesHoje, alteracoesHoje, exclusoesHoje, pendentesHoje, aprovadosHoje, alertasCriticos };
   }, [profissionais, solicitacoes]);
 
-  // Today KPI click handler - abre modal com profissionais do dia
+  // Today KPI click handler
   const handleTodayKpiClick = useCallback((kpiKey) => {
     const hoje = new Date().toISOString().split('T')[0];
     let lista = [];
@@ -141,7 +145,7 @@ export default function Dashboard() {
     setKpiModal({ titulo, lista });
   }, [profissionais, solicitacoes]);
 
-  // KPI click handler - abre modal com profissionais filtrados
+  // KPI click handler
   const handleKpiClick = useCallback((kpiKey) => {
     const hoje = new Date().toISOString().split('T')[0];
     let lista = [];
@@ -178,7 +182,7 @@ export default function Dashboard() {
         break;
       case 'pendentes':
         titulo = `Solicitações Pendentes (${solicitacoes.length})`;
-        setKpiModal(null); // defer to approval modal
+        setKpiModal(null);
         return;
       case 'concluidos':
         lista = profissionais.filter(p => p.controle_concluido);
@@ -196,7 +200,7 @@ export default function Dashboard() {
     return unidades.filter(u => !buscaUnidade || u.nome_unidade.toLowerCase().includes(buscaUnidade.toLowerCase()) || u.cnes?.includes(buscaUnidade));
   }, [unidades, buscaUnidade]);
 
-  // Auto-select unit when search matches exactly (by CNES or name)
+  // Auto-select unit when search matches exactly
   useEffect(() => {
     if (!buscaUnidade.trim()) {
       setUnidadeFiltro('__todos__');
@@ -213,15 +217,25 @@ export default function Dashboard() {
   }, [buscaUnidade, unidades, unidadeFiltro]);
 
   const marcarConcluido = async (id, concluido) => {
-    await supabase.from('profissionais').update({ controle_concluido: concluido }).eq('id', id);
-    recarregar();
+    try {
+      const { error } = await supabase.from('profissionais').update({ controle_concluido: concluido }).eq('id', id);
+      if (error) throw error;
+      recarregar();
+    } catch (e) {
+      console.error('Erro ao marcar como concluído:', e.message);
+    }
   };
 
   const marcarTodosConcluidos = async () => {
-    for (const p of profissionaisFiltrados) {
-      await supabase.from('profissionais').update({ controle_concluido: true }).eq('id', p.id);
+    try {
+      for (const p of profissionaisFiltrados) {
+        const { error } = await supabase.from('profissionais').update({ controle_concluido: true }).eq('id', p.id);
+        if (error) throw error;
+      }
+      recarregar();
+    } catch (e) {
+      console.error('Erro ao marcar todos:', e.message);
     }
-    recarregar();
   };
 
   const exportarCSV = () => {
@@ -317,28 +331,33 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
       <div className="bg-white border-b-2 border-[var(--cor-primaria)]">
-        <div className="flex items-center justify-between px-4 py-2.5 flex-wrap gap-2.5">
-          <img src="/logo_prefeitura.png" alt="Prefeitura" className="h-[55px]" />
-          <div className="flex-1 text-center min-w-[200px]">
-            <h2 className="text-[var(--cor-primaria)] text-[clamp(14px,2.5vw,18px)] font-bold">PREFEITURA DO MUNICÍPIO DE PORTO VELHO</h2>
-            <h3 className="text-[var(--cor-primaria)] text-[clamp(11px,1.8vw,14px)]">SECRETARIA MUNICIPAL DE SAÚDE – SEMUSA</h3>
-            <h3 className="text-[var(--cor-primaria)] text-[clamp(11px,1.8vw,14px)]">DIVISÃO DE CONTROLE E AVALIAÇÃO DO SUS</h3>
+        <div className="flex items-center justify-between px-3 md:px-4 py-2.5 flex-wrap gap-2.5">
+          <img src="/logo_prefeitura.png" alt="Prefeitura" className="h-[40px] md:h-[55px]" />
+          <div className="flex-1 text-center min-w-[180px] md:min-w-[200px]">
+            <h2 className="text-[var(--cor-primaria)] text-[clamp(12px,2.5vw,18px)] font-bold leading-tight">PREFEITURA DO MUNICÍPIO DE PORTO VELHO</h2>
+            <h3 className="text-[var(--cor-primaria)] text-[clamp(10px,1.8vw,14px)]">SECRETARIA MUNICIPAL DE SAÚDE – SEMUSA</h3>
+            <h3 className="text-[var(--cor-primaria)] text-[clamp(10px,1.8vw,14px)]">DIVISÃO DE CONTROLE E AVALIAÇÃO DO SUS</h3>
           </div>
-          <img src="/logo_cnes.png" alt="CNES" className="h-[55px]" />
+          <img src="/logo_cnes.png" alt="CNES" className="h-[40px] md:h-[55px]" />
         </div>
-        <div className="bg-[var(--cor-primaria)] text-white text-center py-2 px-3 font-bold text-[clamp(14px,2.5vw,17px)]">
+        <div className="bg-[var(--cor-primaria)] text-white text-center py-2 px-3 font-bold text-[clamp(13px,2.5vw,17px)]">
           PLANILHA DE ATUALIZAÇÃO CADASTRAL DOS PROFISSIONAIS – CNES
         </div>
-        <div className="flex flex-wrap items-center justify-between px-4 py-2 border-t border-gray-300 text-[clamp(11px,1.6vw,13px)] gap-2">
-          <span>Versão: React + Tailwind</span>
+        <div className="flex flex-wrap items-center justify-center md:justify-between px-3 md:px-4 py-2 border-t border-gray-300 text-[clamp(10px,1.6vw,13px)] gap-2">
+          <div className="flex items-center gap-2 text-xs md:text-sm">
+            <UserCircle size={16} className="text-[var(--cor-primaria)]" />
+            <span className="font-semibold text-gray-700 truncate max-w-[120px] md:max-w-none">{nomeUsuario}</span>
+            <span className="text-gray-400 hidden sm:inline">•</span>
+            <span className="text-gray-500 hidden sm:inline text-[11px]">{emailUsuario}</span>
+          </div>
           <input type="date" value={dataEmissao} onChange={e => setDataEmissao(e.target.value)}
-            className="w-auto max-w-[160px] border border-gray-300 rounded px-2 py-1 text-sm" />
-          <div className="flex items-center gap-1.5 font-bold text-sm px-3 py-1 rounded-full bg-gray-100 border-2 border-gray-300">
-            <span className={`w-3 h-3 rounded-full inline-block ${realtimeAtivo ? 'bg-green-500 shadow-[0_0_6px_#28a745]' : 'bg-red-500 shadow-[0_0_6px_#dc3545]'}`} />
+            className="w-auto max-w-[150px] border border-gray-300 rounded px-2 py-1 text-xs md:text-sm" />
+          <div className="flex items-center gap-1.5 font-bold text-xs md:text-sm px-2 md:px-3 py-1 rounded-full bg-gray-100 border-2 border-gray-300">
+            <span className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full inline-block ${realtimeAtivo ? 'bg-green-500 shadow-[0_0_6px_#28a745]' : 'bg-red-500 shadow-[0_0_6px_#dc3545]'}`} />
             <span>{statusConexao}</span>
             {realtimeAtivo && <RefreshCw size={12} className="animate-spin text-yellow-500" />}
           </div>
-          <button onClick={signOut} className="bg-red-500 hover:bg-red-600 text-white rounded-full px-4 py-1 text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-105 cursor-pointer">
+          <button onClick={signOut} className="bg-red-500 hover:bg-red-600 text-white rounded-full px-3 md:px-4 py-1 text-[11px] md:text-xs font-bold flex items-center gap-1 transition-all hover:scale-105 cursor-pointer">
             <LogOut size={11} /> Sair
           </button>
         </div>
@@ -346,13 +365,13 @@ export default function Dashboard() {
 
       {/* Main Content - Skeleton while loading */}
       {loading ? (
-        <div className="bg-gray-50 px-4 py-3 border-b-2 border-[var(--cor-primaria)]">
+        <div className="bg-gray-50 px-3 md:px-4 py-3 border-b-2 border-[var(--cor-primaria)]">
           <LoadingSkeleton />
         </div>
       ) : (
       <>
       {/* KPIs */}
-      <div className="bg-gray-50 px-4 py-3 border-b-2 border-[var(--cor-primaria)]">
+      <div className="bg-gray-50 px-3 md:px-4 py-3 border-b-2 border-[var(--cor-primaria)]">
         <KPICards kpis={kpis} onKpiClick={handleKpiClick} />
         <TodayKPIs stats={todayStats} onKpiClick={handleTodayKpiClick} />
         <Suspense fallback={<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">{Array.from({ length: 4 }).map((_, i) => (
@@ -400,9 +419,9 @@ export default function Dashboard() {
             {solicitacoes.map(sol => {
               const prof = profissionais.find(p => p.id === sol.profissional_id);
               return (
-                <div key={sol.id} className="flex justify-between items-center text-xs py-1.5 border-b border-gray-100">
-                  <span><strong>{sol.tipo === 'update' ? 'Alteração' : 'Exclusão'}</strong> - {prof?.nome_profissional || sol.dados_antigos?.nome_profissional || `ID ${sol.profissional_id}`} <span className="text-gray-500">{new Date(sol.criado_em).toLocaleString()}</span></span>
-                  <div className="flex gap-1">
+                <div key={sol.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs py-1.5 border-b border-gray-100 gap-1">
+                  <span className="flex-1"><strong>{sol.tipo === 'update' ? 'Alteração' : 'Exclusão'}</strong> - {prof?.nome_profissional || sol.dados_antigos?.nome_profissional || `ID ${sol.profissional_id}`} <span className="text-gray-500">{new Date(sol.criado_em).toLocaleString()}</span></span>
+                  <div className="flex gap-1 self-end sm:self-auto">
                     <button onClick={() => setSolicitacaoModal(sol)} className="bg-green-500 hover:bg-green-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Aprovar</button>
                     <button onClick={async () => {
                       if (window.confirm(`Rejeitar solicitação de ${sol.tipo === 'update' ? 'alteração' : 'exclusão'}?`)) {
@@ -419,60 +438,59 @@ export default function Dashboard() {
       </div>
 
       {/* Unit Selector */}
-      <div className="flex flex-wrap items-center gap-2.5 px-4 py-2.5 bg-gray-50 border-b border-gray-300">
-        <label className="font-bold text-sm">Unidade:</label>
-        <input type="text" value={buscaUnidade} onChange={e => setBuscaUnidade(e.target.value)} placeholder="🔍 Buscar por nome ou CNES..."
-          className="flex-1 min-w-[200px] px-2 py-1.5 border border-gray-300 rounded text-sm" />
+      <div className="flex flex-wrap items-center gap-2 px-3 md:px-4 py-2.5 bg-gray-50 border-b border-gray-300">
+        <label className="font-bold text-xs md:text-sm">Unidade:</label>
+        <input type="text" value={buscaUnidade} onChange={e => setBuscaUnidade(e.target.value)} placeholder="🔍 Buscar..."
+          className="flex-1 min-w-[140px] md:min-w-[200px] px-2 py-1.5 border border-gray-300 rounded text-xs md:text-sm" />
         <select value={unidadeFiltro} onChange={e => setUnidadeFiltro(e.target.value)}
-          className="flex-1 min-w-[250px] px-2 py-1.5 border border-gray-300 rounded text-sm">
+          className="flex-1 min-w-[180px] md:min-w-[250px] px-2 py-1.5 border border-gray-300 rounded text-xs md:text-sm">
           <option value="__todos__">Todas as unidades</option>
           {unidadeOptions.map(u => (
             <option key={u.cnes} value={u.cnes}>{u.cnes} - {u.nome_unidade}</option>
           ))}
         </select>
-        <button onClick={() => recarregar()} className="bg-[var(--cor-primaria)] hover:bg-[var(--cor-primaria-hover)] text-white px-4 py-1.5 rounded font-bold text-sm flex items-center gap-1.5 cursor-pointer"><Search size={14} /> Filtrar</button>
-        <button onClick={() => setRelatoriosModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-1.5 rounded font-bold text-sm flex items-center gap-1.5 cursor-pointer"><BarChart3 size={14} /> Relatórios</button>
-        <button onClick={() => window.print()} className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded font-bold text-sm flex items-center gap-1.5 cursor-pointer"><FileText size={14} /> PDF</button>
-        <button onClick={exportarCSV} className="bg-green-500 hover:bg-green-600 text-white px-4 py-1.5 rounded font-bold text-sm flex items-center gap-1.5 cursor-pointer"><Download size={14} /> CSV</button>
+        <button onClick={() => recarregar()} className="bg-[var(--cor-primaria)] hover:bg-[var(--cor-primaria-hover)] text-white px-3 md:px-4 py-1.5 rounded font-bold text-xs md:text-sm flex items-center gap-1.5 cursor-pointer"><Search size={14} /> Filtrar</button>
+        <button onClick={() => setRelatoriosModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-3 md:px-4 py-1.5 rounded font-bold text-xs md:text-sm flex items-center gap-1.5 cursor-pointer"><BarChart3 size={14} /> Rel.</button>
+        <button onClick={() => window.print()} className="bg-red-500 hover:bg-red-600 text-white px-3 md:px-4 py-1.5 rounded font-bold text-xs md:text-sm flex items-center gap-1.5 cursor-pointer"><FileText size={14} /> PDF</button>
+        <button onClick={exportarCSV} className="bg-green-500 hover:bg-green-600 text-white px-3 md:px-4 py-1.5 rounded font-bold text-xs md:text-sm flex items-center gap-1.5 cursor-pointer"><Download size={14} /> CSV</button>
       </div>
 
       {/* Global Search */}
-      <div className="flex flex-wrap items-center gap-2.5 px-4 py-2.5 bg-gray-50 border-b border-gray-300">
+      <div className="flex flex-wrap items-center gap-2 px-3 md:px-4 py-2.5 bg-gray-50 border-b border-gray-300">
         <input type="text" value={buscaGlobal} onChange={e => setBuscaGlobal(e.target.value)} placeholder="🔍 Buscar por nome, CPF ou especialidade..."
-          className="flex-1 min-w-[200px] px-3 py-2 border border-gray-300 rounded text-sm" />
-        <select value={filtroEspecialidade} onChange={e => setFiltroEspecialidade(e.target.value)} className="min-w-[130px] px-2 py-2 border border-gray-300 rounded text-sm bg-white">
+          className="flex-1 min-w-[180px] md:min-w-[200px] px-2 md:px-3 py-2 border border-gray-300 rounded text-xs md:text-sm" />
+        <select value={filtroEspecialidade} onChange={e => setFiltroEspecialidade(e.target.value)} className="min-w-[110px] md:min-w-[130px] px-2 py-2 border border-gray-300 rounded text-xs md:text-sm bg-white">
           <option value="todos">Todos</option>
           <option value="medico">Médico</option>
           <option value="enfermeiro">Enfermeiro</option>
           <option value="dentista">Dentista</option>
         </select>
-        <select value={filtroControle} onChange={e => setFiltroControle(e.target.value)} className="min-w-[140px] px-2 py-2 border border-gray-300 rounded text-sm bg-white">
-          <option value="todos">Todos (controle)</option>
+        <select value={filtroControle} onChange={e => setFiltroControle(e.target.value)} className="min-w-[120px] md:min-w-[140px] px-2 py-2 border border-gray-300 rounded text-xs md:text-sm bg-white">
+          <option value="todos">Todos</option>
           <option value="pendentes">Pendentes</option>
           <option value="concluidos">Concluídos</option>
         </select>
-        <span className="text-sm text-gray-500">{loading ? <span className="inline-block w-16 h-4 bg-gray-200 animate-pulse rounded" /> : `${profissionaisFiltrados.length} encontrados`}</span>
-        <button onClick={marcarTodosConcluidos} className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded font-bold text-xs flex items-center gap-1.5 cursor-pointer">
-          <CheckCheck size={14} /> Marcar todos
+        <span className="text-xs md:text-sm text-gray-500">{loading ? <span className="inline-block w-16 h-4 bg-gray-200 animate-pulse rounded" /> : `${profissionaisFiltrados.length} encontrados`}</span>
+        <button onClick={marcarTodosConcluidos} className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded font-bold text-[11px] md:text-xs flex items-center gap-1.5 cursor-pointer">
+          <CheckCheck size={14} /> Concluir
         </button>
       </div>
 
-
       {/* Section: Dados da Unidade */}
-      <div className="bg-[var(--cor-primaria)] text-white px-4 py-1 font-bold text-sm">1. DADOS DA UNIDADE</div>
-      <div className="flex flex-wrap items-center gap-8 px-5 py-3.5 bg-gray-50 border-b-2 border-[var(--cor-primaria)]">
-        <div className="flex items-center gap-2 text-base">
+      <div className="bg-[var(--cor-primaria)] text-white px-3 md:px-4 py-1 font-bold text-xs md:text-sm">1. DADOS DA UNIDADE</div>
+      <div className="flex flex-wrap items-center gap-4 md:gap-8 px-3 md:px-5 py-3 bg-gray-50 border-b-2 border-[var(--cor-primaria)]">
+        <div className="flex items-center gap-2 text-sm md:text-base">
           <span className="font-bold text-[var(--cor-primaria)]">CNES:</span>
-          <span className="font-bold text-lg text-[var(--cor-primaria)] bg-gray-200 px-3 py-1 rounded border-2 border-[var(--cor-primaria)]">{unidadeSelecionada?.cnes || '--'}</span>
+          <span className="font-bold text-base md:text-lg text-[var(--cor-primaria)] bg-gray-200 px-2 md:px-3 py-1 rounded border-2 border-[var(--cor-primaria)]">{unidadeSelecionada?.cnes || '--'}</span>
         </div>
-        <div className="flex items-center gap-2 text-base">
+        <div className="flex items-center gap-2 text-sm md:text-base">
           <span className="font-bold text-[var(--cor-primaria)]">Unidade:</span>
-          <span className="font-bold text-lg text-[var(--cor-primaria)] bg-gray-200 px-3 py-1 rounded border-2 border-[var(--cor-primaria)]">{unidadeSelecionada?.nome_unidade || '--'}</span>
+          <span className="font-bold text-base md:text-lg text-[var(--cor-primaria)] bg-gray-200 px-2 md:px-3 py-1 rounded border-2 border-[var(--cor-primaria)]">{unidadeSelecionada?.nome_unidade || '--'}</span>
         </div>
       </div>
 
       {/* Section: Profissionais */}
-      <div className="bg-[var(--cor-primaria)] text-white px-4 py-1 font-bold text-sm">2. RELAÇÃO DOS PROFISSIONAIS</div>
+      <div className="bg-[var(--cor-primaria)] text-white px-3 md:px-4 py-1 font-bold text-xs md:text-sm">2. RELAÇÃO DOS PROFISSIONAIS</div>
       <ProfessionalsTable
         profissionaisFiltrados={profissionaisFiltrados}
         onMarcarConcluido={marcarConcluido}
@@ -480,12 +498,12 @@ export default function Dashboard() {
       />
 
       {/* Footer */}
-      <div className="mt-auto bg-gray-100 border-t-2 border-[var(--cor-primaria)] px-5 py-4 text-center text-xs text-gray-700">
+      <div className="mt-auto bg-gray-100 border-t-2 border-[var(--cor-primaria)] px-3 md:px-5 py-4 text-center text-[11px] md:text-xs text-gray-700">
         <p className="my-0.5">Desenvolvido por Cristian Marques</p>
         <p className="my-0.5">SEMUSA - Secretaria Municipal de Saúde de Porto Velho</p>
-        <p className="text-[11px] text-gray-500">Avenida Campos Sales, 2283 - Centro - Porto Velho/RO - CEP: 76804-358</p>
-        <p className="text-[11px] text-gray-500">Telefone: (69) 3901-6126 | E-mail: gecav.semusa@portovelho.ro.gov.br</p>
-        <p className="text-[11px] text-gray-400 mt-1">© 2026 - Todos os direitos reservados</p>
+        <p className="text-[10px] md:text-[11px] text-gray-500">Avenida Campos Sales, 2283 - Centro - Porto Velho/RO - CEP: 76804-358</p>
+        <p className="text-[10px] md:text-[11px] text-gray-500">Telefone: (69) 3901-6126 | E-mail: gecav.semusa@portovelho.ro.gov.br</p>
+        <p className="text-[10px] md:text-[11px] text-gray-400 mt-1">© 2026 - Todos os direitos reservados</p>
       </div>
 
       </>
