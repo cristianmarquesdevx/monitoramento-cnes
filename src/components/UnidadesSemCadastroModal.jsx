@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Modal from './Modal';
 import { supabase } from '../lib/supabase';
 import { useToast } from './Toast';
-import { Mail, Send, AlertTriangle, CheckCircle, ExternalLink, Copy, Users } from 'lucide-react';
+import { Mail, Send, AlertTriangle, CheckCircle, Copy } from 'lucide-react';
 
 export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, todasUnidades }) {
   const toast = useToast();
@@ -55,14 +55,8 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
       toast.success(`E-mail enviado para ${unidade.email_responsavel}`);
       setResultado(prev => ({ ...prev, enviados: (prev?.enviados || 0) + 1 }));
     } catch (e) {
-      // Se a Edge Function não existir, avisa para configurar
-      if (e.message?.includes('Failed to fetch') || e.message?.includes('not found')) {
-        toast.warning(
-          'Edge Function não configurada. Configure primeiro: clique no botão "Configurar E-mail"'
-        );
-      } else {
-        toast.error('Erro ao enviar e-mail: ' + e.message);
-      }
+      const msg = e.message || 'Erro desconhecido';
+      toast.error('Falha ao enviar e-mail: ' + msg);
     } finally {
       setEnviando(false);
     }
@@ -161,15 +155,7 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
           <Copy size={14} />
           Copiar Lista
         </button>
-        <a
-          href="https://supabase.com/dashboard/project/cptkatdswfyycsgedcte/sql/new"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded text-xs font-bold cursor-pointer transition-all"
-        >
-          <ExternalLink size={14} />
-          Configurar E-mail
-        </a>
+
       </div>
 
       {/* Results */}
@@ -268,42 +254,9 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
         </table>
       </div>
 
-      {/* Help */}
-      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <div className="flex items-start gap-2">
-          <AlertTriangle size={14} className="text-yellow-600 mt-0.5" />
-          <div>
-            <p className="text-xs font-bold text-yellow-800 mb-1">Para enviar e-mails, é necessário:</p>
-            <ol className="text-[11px] text-yellow-700 list-decimal pl-4 space-y-1">
-              <li>
-                <strong>1. Adicionar coluna de e-mail:</strong> Execute o SQL abaixo no
-                <a href="https://supabase.com/dashboard/project/cptkatdswfyycsgedcte/sql/new" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline ml-1">SQL Editor do Supabase</a>
-              </li>
-              <li><strong>2.</strong> Preencher os e-mails dos responsáveis (clicando na coluna "E-mail" acima)</li>
-              <li><strong>3.</strong> Configurar uma conta no <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Resend</a> (grátis, 100 e-mails/dia)</li>
-              <li><strong>4.</strong> Criar uma Edge Function no Supabase com a chave da Resend</li>
-            </ol>
-          </div>
-        </div>
-      </div>
 
-      {/* SQL for adding email column */}
-      <details className="mt-3">
-        <summary className="text-xs font-bold text-gray-600 cursor-pointer hover:text-gray-800">
-          📄 Ver SQL necessário para adicionar coluna de e-mail
-        </summary>
-        <pre className="mt-2 p-3 bg-gray-900 text-green-400 rounded text-[11px] overflow-x-auto">
-{`-- Adicionar coluna de e-mail do responsável na tabela unidades_saude
-ALTER TABLE unidades_saude
-ADD COLUMN IF NOT EXISTS email_responsavel TEXT;
 
--- Verificar se foi adicionada
-SELECT column_name, data_type 
-FROM information_schema.columns 
-WHERE table_name = 'unidades_saude' 
-ORDER BY ordinal_position;`}
-        </pre>
-      </details>
+
     </Modal>
   );
 }
