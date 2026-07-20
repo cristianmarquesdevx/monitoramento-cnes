@@ -42,3 +42,6 @@ __pycache__/
 supabase/.temp/
 supabase/.branches
 *.env
+
+.vercel
+.env*

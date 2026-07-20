@@ -1,0 +1,3 @@
+# Python Dependencies
+# smtplib, ssl, email, json são módulos da biblioteca padrão - não precisam ser instalados
+# Este arquivo existe apenas para o Vercel detectar o runtime Python

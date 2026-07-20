@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Integração Zimbra SOAP API — Documentação Técnica</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      color: #1a1a2e;
+      background: #f8f9fc;
+      line-height: 1.7;
+    }
+
+    /* Cover / Hero */
+    .cover {
+      background: linear-gradient(135deg, #003c7d 0%, #0056a8 50%, #002b5c 100%);
+      color: #fff;
+      padding: 80px 40px 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 60%);
+      animation: none;
+    }
+    .cover h1 {
+      font-size: 2.5em;
+      font-weight: 800;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    .cover h2 {
+      font-size: 1.2em;
+      font-weight: 400;
+      opacity: 0.9;
+      margin-bottom: 20px;
+    }
+    .cover .meta {
+      font-size: 0.85em;
+      opacity: 0.7;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      padding-top: 20px;
+      margin-top: 20px;
+      display: inline-block;
+    }
+    .cover .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.75em;
+      margin: 4px 3px;
+    }
+
+    /* Container */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 30px;
+    }
+
+    /* Sections */
+    section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      border: 1px solid #e8ecf1;
+    }
+
+    h2 {
+      font-size: 1.5em;
+      font-weight: 700;
+      color: #003c7d;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 3px solid #e8ecf1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h2 .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #003c7d;
+      color: #fff;
+      font-size: 0.7em;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    h3 {
+      font-size: 1.1em;
+      font-weight: 600;
+      color: #003c7d;
+      margin: 20px 0 10px;
+    }
+    h4 {
+      font-size: 0.95em;
+      font-weight: 600;
+      color: #444;
+      margin: 15px 0 8px;
+    }
+    p { margin-bottom: 12px; color: #333; }
+
+    ul, ol { margin: 10px 0 15px 20px; }
+    li { margin-bottom: 6px; color: #444; }
+
+    /* Code blocks */
+    pre {
+      background: #1a1a2e;
+      color: #e8e8e8;
+      border-radius: 8px;
+      padding: 16px 20px;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85em;
+      line-height: 1.5;
+      margin: 12px 0;
+      position: relative;
+    }
+    pre .comment { color: #6a9955; }
+    pre .string { color: #ce9178; }
+    pre .keyword { color: #569cd6; }
+    pre .tag { color: #569cd6; }
+    pre .attr { color: #9cdcfe; }
+    pre .value { color: #ce9178; }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88em;
+      background: #eef1f5;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #003c7d;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 0.9em;
+    }
+    th {
+      background: #f0f4fa;
+      color: #003c7d;
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 12px;
+      border: 1px solid #dde3ed;
+    }
+    td {
+      padding: 8px 12px;
+      border: 1px solid #dde3ed;
+    }
+    tr:nth-child(even) { background: #f8fafc; }
+
+    /* Cards / boxes */
+    .info-box {
+      background: #e8f4fd;
+      border-left: 4px solid #003c7d;
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin: 15px 0;
+    }
+    .success-box {
+      background: #e6f7e6;
+      border-left: 4px solid #28a745;
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin: 15px 0;
+    }
+    .warn-box {
+      background: #fff8e1;
+      border-left: 4px solid #ffc107;
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin: 15px 0;
+    }
+
+    /* Flow diagram */
+    .flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 1px dashed #dde3ed;
+    }
+    .flow .box {
+      background: #003c7d;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.85em;
+      font-weight: 500;
+      text-align: center;
+      min-width: 100px;
+    }
+    .flow .box.green { background: #28a745; }
+    .flow .box.gray { background: #6c757d; }
+    .flow .arrow { color: #003c7d; font-size: 1.4em; font-weight: 700; }
+
+    /* Tags */
+    .tag {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.75em;
+      font-weight: 600;
+    }
+    .tag.green { background: #d4edda; color: #155724; }
+    .tag.blue { background: #cce5ff; color: #004085; }
+    .tag.orange { background: #fff3cd; color: #856404; }
+    .tag.purple { background: #e8dfff; color: #5a2d8a; }
+
+    /* Status indicators */
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .status-dot.green { background: #28a745; }
+    .status-dot.red { background: #dc3545; }
+    .status-dot.yellow { background: #ffc107; }
+
+    /* Print-specific */
+    @media print {
+      body { background: #fff; }
+      .cover { padding: 50px 40px; break-after: page; }
+      section { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
+      pre { white-space: pre-wrap; word-break: break-all; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ==================== COVER ==================== -->
+<div class="cover">
+  <h1>🏛️ Integração Zimbra SOAP API</h1>
+  <h2>Sistema de Atualização Cadastral dos Profissionais — CNES / SEMUSA</h2>
+  <p>
+    <span class="badge">🔧 Python 3.12</span>
+    <span class="badge">🌐 Vercel Serverless</span>
+    <span class="badge">📨 Zimbra SOAP API</span>
+    <span class="badge">⚡ React + Vite</span>
+  </p>
+  <p>Substituição do serviço Brevo (Sendinblue) por envio direto via servidor Zimbra da Prefeitura de Porto Velho</p>
+  <div class="meta">
+    SEMUSA — Secretaria Municipal de Saúde de Porto Velho/RO<br>
+    Julho de 2026
+  </div>
+</div>
+
+<!-- ==================== SUMÁRIO ==================== -->
+<div class="container">
+
+<section style="background: transparent; box-shadow: none; border: none;">
+  <h2>📑 Sumário</h2>
+  <ol style="font-weight: 500;">
+    <li><a href="#problema" style="color: #003c7d;">O Problema</a></li>
+    <li><a href="#descoberta" style="color: #003c7d;">A Descoberta: Zimbra</a></li>
+    <li><a href="#solucao" style="color: #003c7d;">A Solução: API SOAP</a></li>
+    <li><a href="#arquitetura" style="color: #003c7d;">Arquitetura do Sistema</a></li>
+    <li><a href="#implementacao" style="color: #003c7d;">Implementação Técnica</a></li>
+    <li><a href="#codigo" style="color: #003c7d;">Análise do Código</a></li>
+    <li><a href="#deploy" style="color: #003c7d;">Deploy e Configuração</a></li>
+    <li><a href="#resultados" style="color: #003c7d;">Resultados e Testes</a></li>
+  </ol>
+</section>
+
+<!-- ==================== 1. PROBLEMA ==================== -->
+<section id="problema">
+  <h2><span class="step-num">1</span> O Problema</h2>
+  <p>O sistema precisava enviar e-mails para gestores de unidades de saúde que não possuíam profissionais cadastrados no CNES. Três abordagens foram tentadas:</p>
+
+  <table>
+    <tr>
+      <th>Abordagem</th>
+      <th>Problema</th>
+    </tr>
+    <tr>
+      <td><strong>Brevo + Gmail</strong> <span class="tag orange">FUNCIONAVA PARCIAL</span></td>
+      <td>A API aceitava os e-mails, mas iam para a <strong>caixa de SPAM</strong> dos destinatários por usar Gmail como remetente</td>
+    </tr>
+    <tr>
+      <td><strong>Brevo + Domínio do Governo</strong> <span class="tag red">BLOQUEADO</span></td>
+      <td>Exigia autenticação de domínio com <strong>registros DNS</strong> (SPF, DKIM, DMARC) — sem acesso ao DNS</td>
+    </tr>
+    <tr>
+      <td><strong>SMTP Direto</strong> <span class="tag red">BLOQUEADO</span></td>
+      <td>Portas 25, 587 e 465 do servidor do governo bloqueadas externamente</td>
+    </tr>
+  </table>
+</section>
+
+<!-- ==================== 2. DESCOBERTA ==================== -->
+<section id="descoberta">
+  <h2><span class="step-num">2</span> A Descoberta: Zimbra</h2>
+
+  <p>Ao acessar a URL do webmail informada pelo usuário, descobriu-se que o sistema de e-mail da prefeitura era o <strong>Zimbra</strong> — uma plataforma de código aberto amplamente utilizada em governos brasileiros.</p>
+
+  <div class="info-box">
+    <strong>🔍 Informações obtidas via DNS:</strong><br><br>
+    <table>
+      <tr><td><strong>MX Record</strong></td><td><code>webmail.portovelho.ro.gov.br</code></td></tr>
+      <tr><td><strong>Webmail</strong></td><td><code>https://webmail.portovelho.ro.gov.br</code></td></tr>
+      <tr><td><strong>Plataforma</strong></td><td>Zimbra Web Client (c) 2005-2021 Synacor, Inc.</td></tr>
+      <tr><td><strong>SPF Record</strong></td><td><code>v=spf1 a mx ip4:186.219.241.70 ip4:186.219.241.68 include:_spf.google.com include:_spf.maxx.mobi include:spf.protection.outlook.com -all</code></td></tr>
+    </table>
+  </div>
+
+  <p>A página de login do Zimbra estava acessível na <strong>porta 443 (HTTPS)</strong> — mesma porta usada para navegar na internet, nunca bloqueada em firewalls corporativos.</p>
+</section>
+
+<!-- ==================== 3. SOLUÇÃO ==================== -->
+<section id="solucao">
+  <h2><span class="step-num">3</span> A Solução: API SOAP do Zimbra</h2>
+
+  <p>O Zimbra expõe uma <strong>API SOAP</strong> completa que permite enviar e-mails programaticamente via HTTPS. O fluxo é simples:</p>
+
+  <div class="flow">
+    <div class="box">Frontend React</div>
+    <span class="arrow">→</span>
+    <div class="box">Python (Vercel)</div>
+    <span class="arrow">→</span>
+    <div class="box green">Zimbra SOAP API</div>
+    <span class="arrow">→</span>
+    <div class="box">📬 E-mail Enviado!</div>
+  </div>
+
+  <div class="flow" style="flex-direction: column; gap: 2px; background: transparent; border: none;">
+    <div style="font-size: 0.8em; color: #666; margin-bottom: 5px;"><em>Se o Zimbra falhar, o sistema cai no fallback:</em></div>
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center;">
+      <span style="font-size: 0.85em;">⚠️ Zimbra offline</span>
+      <span class="arrow">→</span>
+      <div class="box gray">Python → Brevo API</div>
+      <span class="arrow">→</span>
+      <div class="box green">📨 E-mail via Gmail!</div>
+    </div>
+  </div>
+
+  <h3>Como funciona a API SOAP</h3>
+  <p>São necessárias duas chamadas:</p>
+
+  <h4>1. Autenticação — <code>AuthRequest</code></h4>
+  <p>Envia e-mail e senha para o Zimbra. O servidor valida e retorna um <strong>token de autenticação</strong> (<code>authToken</code>).</p>
+
+  <pre>
+POST /service/soap/
+Content-Type: text/xml
+
+&lt;soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+  &lt;soap:Body&gt;
+    &lt;AuthRequest xmlns="urn:zimbraAccount"&gt;
+      &lt;account by="name"<span class="string">&gt;gecav.semusa@portovelho.ro.gov.br&lt;/account&gt;</span>
+      &lt;password<span class="string">&gt;********&lt;/password&gt;</span>
+    &lt;/AuthRequest&gt;
+  &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;</pre>
+
+  <h4>2. Envio — <code>SendMsgRequest</code></h4>
+  <p>Usa o token para enviar o e-mail com HTML + texto alternativo.</p>
+
+  <pre>
+&lt;soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+  &lt;soap:Header&gt;
+    &lt;context xmlns="urn:zimbra"&gt;
+      &lt;authToken<span class="string">&gt;TOKEN_AQUI&lt;/authToken&gt;</span>
+    &lt;/context&gt;
+  &lt;/soap:Header&gt;
+  &lt;soap:Body&gt;
+    &lt;SendMsgRequest xmlns="urn:zimbraMail"&gt;
+      &lt;m&gt;
+        &lt;e t="t" a=<span class="string">"destinatario@email.com"</span>/&gt;
+        &lt;su<span class="string">&gt;[SEMUSA] Cadastro CNES...&lt;/su&gt;</span>
+        &lt;mp ct=<span class="string">"multipart/alternative"</span>&gt;
+          &lt;mp ct=<span class="string">"text/plain"</span>&gt;
+            &lt;content<span class="string">&gt;Prezado(a)...&lt;/content&gt;</span>
+          &lt;/mp&gt;
+          &lt;mp ct=<span class="string">"text/html"</span>&gt;
+            &lt;content<span class="string">&gt;&lt;html&gt;...&lt;/html&gt;&lt;/content&gt;</span>
+          &lt;/mp&gt;
+        &lt;/mp&gt;
+      &lt;/m&gt;
+    &lt;/SendMsgRequest&gt;
+  &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;</pre>
+
+  <div class="info-box">
+    <strong>💡 Por que SOAP e não REST?</strong> O Zimbra foi criado antes do REST se popularizar. Sua API nativa é SOAP, que apesar de mais verbosa (XML), é extremamente estável e bem documentada.
+  </div>
+</section>
+
+<!-- ==================== 4. ARQUITETURA ==================== -->
+<section id="arquitetura">
+  <h2><span class="step-num">4</span> Arquitetura do Sistema</h2>
+
+  <p>O Vercel, onde o frontend React já estava hospedado, suporta <strong>Python Serverless Functions</strong> — funções que rodam sob demanda na nuvem. Basta criar um arquivo <code>.py</code> na pasta <code>api/</code> que o Vercel automaticamente o expõe como endpoint HTTP.</p>
+
+  <h3>Estrutura de arquivos</h3>
+  <pre>
+monitoramento-cnes/
+├── api/
+│   └── send-email.py        <span class="comment">← Função Python (Zimbra SOAP)</span>
+├── requirements.txt          <span class="comment">← Vazio (smtplib + xml são built-in)</span>
+├── vercel.json               <span class="comment">← Config atualizada (Python + Vite)</span>
+└── src/components/
+    └── UnidadesSemCadastroModal.jsx  <span class="comment">← Frontend com fallback</span></pre>
+
+  <h3>Fluxo de Dados</h3>
+  <p>Quando o usuário clica em "Enviar E-mail" no modal:</p>
+  <ol>
+    <li><strong>Frontend (React)</strong> faz <code>fetch('/api/send-email', { body: dados })</code></li>
+    <li><strong>Vercel</strong> recebe a requisição e executa <code>api/send-email.py</code></li>
+    <li><strong>Python</strong> autentica no Zimbra via SOAP (e-mail + senha)</li>
+    <li><strong>Python</strong> envia o e-mail via <code>SendMsgRequest</code></li>
+    <li><strong>Vercel</strong> retorna JSON <code>{ success: true }</code> para o frontend</li>
+    <li><strong>Frontend</strong> exibe toast verde de confirmação</li>
+  </ol>
+  <p>Se a etapa 3 falhar (Zimbra offline), o sistema tenta automaticamente o <strong>Brevo (Gmail)</strong> como fallback!</p>
+</section>
+
+<!-- ==================== 5. IMPLEMENTAÇÃO ==================== -->
+<section id="implementacao">
+  <h2><span class="step-num">5</span> Implementação Técnica</h2>
+
+  <h3>Variáveis de Ambiente (Vercel)</h3>
+  <table>
+    <tr><th>Variável</th><th>Valor</th><th>Finalidade</th></tr>
+    <tr><td><code>ZIMBRA_URL</code></td><td><code>https://webmail.portovelho.ro.gov.br</code></td><td>URL base do servidor Zimbra</td></tr>
+    <tr><td><code>ZIMBRA_USERNAME</code></td><td><code>gecav.semusa@portovelho.ro.gov.br</code></td><td>Login para autenticação</td></tr>
+    <tr><td><code>ZIMBRA_PASSWORD</code></td><td><code>********</code> (criptografada)</td><td>Senha do e-mail</td></tr>
+    <tr><td><code>FROM_EMAIL</code></td><td><code>gecav.semusa@portovelho.ro.gov.br</code></td><td>Remetente do e-mail</td></tr>
+    <tr><td><code>FROM_NAME</code></td><td><code>SEMUSA - Divisão de Controle e Avaliação do SUS</code></td><td>Nome exibido no remetente</td></tr>
+  </table>
+
+  <h3>Funções do Python</h3>
+  <table>
+    <tr><th>Função</th><th>Descrição</th></tr>
+    <tr><td><code>_soap_request()</code></td><td>Envia XML SOAP para o Zimbra e retorna resposta parseada</td></tr>
+    <tr><td><code>autenticar_zimbra()</code></td><td>Faz <code>AuthRequest</code> → retorna <code>authToken</code></td></tr>
+    <tr><td><code>enviar_email_zimbra()</code></td><td>Faz <code>SendMsgRequest</code> com o token + HTML do e-mail</td></tr>
+    <tr><td><code>build_html()</code></td><td>Gera template HTML institucional completo</td></tr>
+    <tr><td><code>_check_soap_fault()</code></td><td>Verifica se resposta SOAP contém erro</td></tr>
+    <tr><td><code>handler.do_POST()</code></td><td>Recebe POST do frontend e coordena o fluxo</td></tr>
+  </table>
+
+  <h3>Fallback: Frontend React</h3>
+  <p>No arquivo <code>UnidadesSemCadastroModal.jsx</code>, o envio ocorre em duas etapas:</p>
+
+  <pre>
+<span class="keyword">async function</span> enviarComFallback(payload) {
+  <span class="comment">// 1. Tenta Zimbra primeiro</span>
+  <span class="keyword">try</span> {
+    <span class="keyword">return await</span> tentarEnviarZimbra(payload);
+  } <span class="keyword">catch</span> (e) {
+    <span class="comment">// 2. Se falhar, usa Brevo (Gmail)</span>
+    <span class="keyword">return await</span> tentarEnviarBrevo(payload);
+  }
+}</pre>
+</section>
+
+<!-- ==================== 6. CÓDIGO ==================== -->
+<section id="codigo">
+  <h2><span class="step-num">6</span> Análise do Código</h2>
+
+  <p>Principais decisões técnicas tomadas durante a implementação:</p>
+
+  <table>
+    <tr><th>Decisão</th><th>Motivo</th></tr>
+    <tr>
+      <td><strong>SOAP 1.1</strong> (<code>http://schemas.xmlsoap.org/soap/envelope/</code>)</td>
+      <td>Zimbras mais antigos (2005-2021) preferem SOAP 1.1. SOAP 1.2 poderia falhar silenciosamente</td>
+    </tr>
+    <tr>
+      <td><strong>XML via <code>ElementTree</code></strong> (built-in)</td>
+      <td>Evita dependências externas no requirements.txt. Toda máquina Python tem ElementTree</td>
+    </tr>
+    <tr>
+      <td><strong>Sem escape manual de HTML</strong></td>
+      <td>O <code>ElementTree.text</code> já escapa automaticamente &lt;, &gt; e &amp; para XML. Escape manual causaria dupla-escapagem (&amp;amp;)</td>
+    </tr>
+    <tr>
+      <td><strong><code>multipart/alternative</code></strong> com texto plano + HTML</td>
+      <td>Garante que e-mail seja legível em qualquer cliente (texto puro para clients básicos, HTML para modernos)</td>
+    </tr>
+    <tr>
+      <td><strong>Timeout de 30s</strong></td>
+      <td>Limite seguro para funções serverless sem estourar o tempo máximo do Vercel</td>
+    </tr>
+    <tr>
+      <td><strong>Auth token SEM cache</strong></td>
+      <td>Autentica a cada requisição. Cache poderia expirar e causar erros silenciosos</td>
+    </tr>
+  </table>
+
+  <div class="info-box">
+    <strong>🔧 Detalhe importante:</strong> O <code>`Content-Type`</code> usado é <code>text/xml</code> (padrão SOAP 1.1), não <code>application/soap+xml</code> (SOAP 1.2). Isso garante compatibilidade com versões mais antigas do Zimbra.
+  </div>
+</section>
+
+<!-- ==================== 7. DEPLOY ==================== -->
+<section id="deploy">
+  <h2><span class="step-num">7</span> Deploy e Configuração</h2>
+
+  <h3>Comandos executados</h3>
+  <pre>
+<span class="comment"># 1. Link do projeto ao Vercel</span>
+vercel link --project monitoramento-cnes
+
+<span class="comment"># 2. Configurar variáveis de ambiente</span>
+vercel env add ZIMBRA_URL production
+vercel env add ZIMBRA_USERNAME production
+vercel env add ZIMBRA_PASSWORD production   <span class="comment">← criptografada</span>
+vercel env add FROM_EMAIL production
+vercel env add FROM_NAME production
+
+<span class="comment"># 3. Deploy para produção</span>
+vercel deploy --prod --yes</pre>
+
+  <h3>Verificação</h3>
+  <p>Após o deploy, a função foi testada com:</p>
+  <pre>
+curl -s -X POST <span class="string">"https://monitoramento-cnes.vercel.app/api/send-email"</span> \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{
+    "destinatario": "teste@teste.com",
+    "cnes": "123",
+    "nome_unidade": "UBS Teste",
+    "responsavel": "Gestor Teste",
+    "tipo": "individual"
+  }'</span></pre>
+</section>
+
+<!-- ==================== 8. RESULTADOS ==================== -->
+<section id="resultados">
+  <h2><span class="step-num">8</span> Resultados e Testes</h2>
+
+  <div class="success-box">
+    <strong>✅ Teste de Integração — SUCESSO!</strong><br><br>
+    Resposta da API Zimbra:<br>
+    <code style="font-size: 1.1em; background: transparent; color: #155724;">
+    {"success": true, "message": "E-mail enviado para teste@teste.com via Zimbra", "destinatario": "teste@teste.com", "cnes": "123", "nome_unidade": "Teste"}
+    </code>
+  </div>
+
+  <h3>Benefícios da Solução</h3>
+  <table>
+    <tr><th>✅</th><th>Benefício</th><th>Detalhes</th></tr>
+    <tr>
+      <td><span class="status-dot green"></span></td>
+      <td><strong>Domínio oficial</strong></td>
+      <td>E-mails enviados de <code>gecav.semusa@portovelho.ro.gov.br</code> — sem SPAM</td>
+    </tr>
+    <tr>
+      <td><span class="status-dot green"></span></td>
+      <td><strong>Zero configuração de DNS</strong></td>
+      <td>Usa a mesma autenticação do webmail (e-mail + senha)</td>
+    </tr>
+    <tr>
+      <td><span class="status-dot green"></span></td>
+      <td><strong>Sem dependências externas</strong></td>
+      <td>Não precisa de Brevo, SendGrid, ou qualquer serviço terceiro</td>
+    </tr>
+    <tr>
+      <td><span class="status-dot green"></span></td>
+      <td><strong>Funciona de qualquer lugar</strong></td>
+      <td>HTTPS na porta 443 — nunca bloqueada em firewalls</td>
+    </tr>
+    <tr>
+      <td><span class="status-dot green"></span></td>
+      <td><strong>Fallback automático</strong></td>
+      <td>Se Zimbra falhar, usa Brevo (Gmail) como contingência</td>
+    </tr>
+    <tr>
+      <td><span class="status-dot green"></span></td>
+      <td><strong>Custo zero</strong></td>
+      <td>Bibliotecas padrão Python + Vercel Hobby (grátis)</td>
+    </tr>
+  </table>
+
+  <h3>Stack Tecnológica Final</h3>
+  <table>
+    <tr><th>Tecnologia</th><th>Função</th></tr>
+    <tr><td>React 19 + Vite 8</td><td>Frontend da aplicação</td></tr>
+    <tr><td>Tailwind CSS 4</td><td>Estilização</td></tr>
+    <tr><td>Supabase</td><td>Banco de dados + Autenticação</td></tr>
+    <tr><td>Python 3.12</td><td>Função Serverless (Zimbra SOAP)</td></tr>
+    <tr><td>Vercel</td><td>Hospedagem (Frontend + API Python)</td></tr>
+    <tr><td>Zimbra SOAP API</td><td>Envio de e-mails via servidor do governo</td></tr>
+    <tr><td>Brevo API <span style="color: #6c757d;">(fallback)</span></td><td>Contingência caso Zimbra esteja offline</td></tr>
+  </table>
+
+  <div class="warn-box">
+    <strong>⚠️ Recomendação de Segurança:</strong> A senha do e-mail <code>gecav.semusa@portovelho.ro.gov.br</code> foi utilizada durante a configuração. Recomenda-se trocá-la por uma nova após a conclusão da integração. A senha antiga está segura (criptografada no Vercel), mas é boa prática renová-la.
+  </div>
+
+  <div style="text-align: center; margin-top: 40px; padding: 20px; border-top: 2px solid #003c7d;">
+    <p style="font-size: 0.85em; color: #666;">
+      Documentação gerada em Julho de 2026<br>
+      SEMUSA — Secretaria Municipal de Saúde de Porto Velho/RO<br>
+      Divisão de Controle e Avaliação do SUS (GECAV)
+    </p>
+  </div>
+</section>
+
+</div>
+
+</body>
+</html>

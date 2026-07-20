@@ -4,6 +4,37 @@ import { supabase } from '../lib/supabase';
 import { useToast } from './Toast';
 import { Mail, Send, AlertTriangle, CheckCircle, Copy } from 'lucide-react';
 
+// ===== Múltiplos métodos de envio (fallback automático) =====
+const EMAIL_API = '/api/send-email';  // Python SMTP (Vercel)
+
+async function tentarEnviarPython(payload) {
+  const res = await fetch(EMAIL_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(8000)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erro SMTP');
+  return data;
+}
+
+async function tentarEnviarBrevo(payload) {
+  const { data, error } = await supabase.functions.invoke('enviar-email-relacionar', { body: payload });
+  if (error) throw error;
+  return data;
+}
+
+async function enviarComFallback(payload) {
+  // Tenta Python SMTP primeiro. Se falhar, usa Brevo.
+  try {
+    return await tentarEnviarPython(payload);
+  } catch (e) {
+    console.warn('Python SMTP falhou, usando Brevo (fallback):', e.message);
+    return await tentarEnviarBrevo(payload);
+  }
+}
+
 export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, todasUnidades }) {
   const toast = useToast();
   const [enviando, setEnviando] = useState(false);
@@ -41,17 +72,13 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
 
     setEnviando(true);
     try {
-      // Tenta chamar a Edge Function (se existir)
-      const { data, error } = await supabase.functions.invoke('enviar-email-relacionar', {
-        body: {
-          destinatario: unidade.email_responsavel,
-          cnes: unidade.cnes,
-          nome_unidade: unidade.nome_unidade,
-          responsavel: unidade.responsavel || 'Gestor(a)',
-          tipo: 'individual'
-        }
+      const data = await enviarComFallback({
+        destinatario: unidade.email_responsavel,
+        cnes: unidade.cnes,
+        nome_unidade: unidade.nome_unidade,
+        responsavel: unidade.responsavel || 'Gestor(a)',
+        tipo: 'individual'
       });
-      if (error) throw error;
       toast.success(`E-mail enviado para ${unidade.email_responsavel}`);
       setResultado(prev => ({ ...prev, enviados: (prev?.enviados || 0) + 1 }));
     } catch (e) {
@@ -74,20 +101,15 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
     setEnviando(true);
 
     try {
-      // ➡️ 1 chamada única para a Edge Function com todos os destinatários
-      const { data, error } = await supabase.functions.invoke('enviar-email-relacionar', {
-        body: {
-          tipo: 'massivo',
-          destinatarios: comEmail.map(u => ({
-            destinatario: u.email_responsavel,
-            cnes: u.cnes,
-            nome_unidade: u.nome_unidade,
-            responsavel: u.responsavel || 'Gestor(a)',
-          }))
-        }
+      const data = await enviarComFallback({
+        tipo: 'massivo',
+        destinatarios: comEmail.map(u => ({
+          destinatario: u.email_responsavel,
+          cnes: u.cnes,
+          nome_unidade: u.nome_unidade,
+          responsavel: u.responsavel || 'Gestor(a)',
+        }))
       });
-
-      if (error) throw error;
 
       const { enviados, erros, total, detalhes } = data;
       setResultado({ enviados, erros, total });
@@ -97,7 +119,6 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
       } else {
         toast.success(`${enviados} de ${total} enviado(s).`);
         const falhas = detalhes.filter(d => !d.success);
-        // Agrupa todos os erros em um único toast
         const resumoErros = falhas.map(f => `• ${f.nome_unidade}: ${f.error}`).join('\n');
         toast.warning(`${erros} falha(s):\n${resumoErros}`);
       }

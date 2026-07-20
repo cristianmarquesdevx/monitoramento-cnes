@@ -7,7 +7,7 @@ import LoadingSkeleton from './Skeleton';
 import KPICards from './KPICards';
 import ProfessionalsTable from './ProfessionalsTable';
 import TodayKPIs from './TodayKPIs';
-import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3, UserCircle, Sun, Moon, Shield, History, Bell, Eye, Trash2, Fingerprint } from 'lucide-react';
+import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3, UserCircle, Sun, Moon, Shield, History, Bell, Eye, Trash2, Fingerprint, BookOpen } from 'lucide-react';
 
 const ChartsGrid = lazy(() => import('./ChartsGrid'));
 const ApprovalModal = lazy(() => import('./ApprovalModal'));
@@ -17,6 +17,7 @@ const PrintFicha = lazy(() => import('./PrintFicha'));
 const MultiLotacaoModal = lazy(() => import('./MultiLotacaoModal'));
 const DuplicadosModal = lazy(() => import('./DuplicadosModal'));
 const UnidadesSemCadastroModal = lazy(() => import('./UnidadesSemCadastroModal'));
+const DocumentationModal = lazy(() => import('./DocumentationModal'));
 
 export default function Dashboard({ onNavigate }) {
   const { unidades, profissionais, solicitacoes, loading, refreshData, recarregar, setProfissionais } = useData();
@@ -33,6 +34,7 @@ export default function Dashboard({ onNavigate }) {
   const [multiLotacaoModalOpen, setMultiLotacaoModalOpen] = useState(false);
   const [duplicadosModalOpen, setDuplicadosModalOpen] = useState(false);
   const [unidadesSemCadastroModalOpen, setUnidadesSemCadastroModalOpen] = useState(false);
+  const [documentacaoModalOpen, setDocumentacaoModalOpen] = useState(false);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState(50);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('cnesDark') === 'true');
@@ -410,6 +412,9 @@ export default function Dashboard({ onNavigate }) {
             <button onClick={() => onNavigate?.('audit')} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 cursor-pointer" title="Auditoria">
               <History size={14} />
             </button>
+            <button onClick={() => setDocumentacaoModalOpen(true)} className="text-emerald-600 hover:text-emerald-800 p-1 rounded hover:bg-emerald-50 cursor-pointer" title="Documentação Técnica">
+              <BookOpen size={14} />
+            </button>
             <button onClick={() => setDarkMode(!darkMode)} className={`p-1 rounded cursor-pointer ${darkMode ? 'text-yellow-400 hover:bg-gray-700' : 'text-gray-500 hover:bg-gray-200'}`} title={darkMode ? 'Modo claro' : 'Modo escuro'}>
               {darkMode ? <Sun size={14} /> : <Moon size={14} />}
             </button>
@@ -681,6 +686,12 @@ export default function Dashboard({ onNavigate }) {
             onClose={() => setUnidadesSemCadastroModalOpen(false)}
             unidades={unidadesSemCadastro}
             todasUnidades={unidades}
+          />
+        </Suspense>
+        <Suspense fallback={null}>
+          <DocumentationModal
+            isOpen={documentacaoModalOpen}
+            onClose={() => setDocumentacaoModalOpen(false)}
           />
         </Suspense>
     </div>
