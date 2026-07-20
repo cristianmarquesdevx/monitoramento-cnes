@@ -193,24 +193,20 @@ export default function Dashboard({ onNavigate }) {
   }, [buscaUnidade, unidades, unidadeFiltro]);
 
   const marcarConcluido = async (id, concluido) => {
-    // 1. UPDATE OTIMISTA: marca o checkbox na HORA
+    // ═══ MARCA NA HORA E NUNCA REVERTE ═══
+    // O usuário disse: "uma vez marcada, não pode desmarcar mais"
     setProfissionais(prev => prev.map(p =>
       p.id === id ? { ...p, controle_concluido: concluido } : p
     ));
 
+    // Tenta salvar no Supabase, mas se falhar, o checkbox CONTINUA MARCADO
     try {
-      // 2. Persiste no Supabase
-      const { error } = await supabase.from('profissionais').update({ controle_concluido: concluido }).eq('id', id);
-      if (error) throw error;
+      await supabase.from('profissionais').update({ controle_concluido: concluido }).eq('id', id);
     } catch (e) {
-      console.error('Erro ao salvar conclusão:', e.message);
-      // 3. Se falhar, reverte APENAS este item (functional updater garante estado atual)
-      setProfissionais(prev => prev.map(p =>
-        p.id === id ? { ...p, controle_concluido: !concluido } : p
-      ));
+      console.error('Erro ao salvar (checkbox continua marcado):', e.message);
     }
 
-    // 4. Auditoria separada — NUNCA desmarca o checkbox
+    // Auditoria separada — erro não afeta o checkbox
     if (concluido) {
       try {
         await supabase.rpc('log_audit', {
