@@ -136,7 +136,7 @@ export default function ReportsModal({ isOpen, onClose, profissionais, unidades,
       }
 
       case 'controle': {
-        const concluidos = profissionaisFiltrados.filter(p => p.controle_concluido).length;
+        const concluidos = profissionaisFiltrados.filter(p => p.controle_feito).length;
         const pendentes = profissionaisFiltrados.length - concluidos;
         return {
           titulo: 'Controle',

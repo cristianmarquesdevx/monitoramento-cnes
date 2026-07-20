@@ -110,8 +110,8 @@ export default function Dashboard({ onNavigate }) {
     if (filtroEspecialidade === 'medico') lista = lista.filter(p => p.cbo?.startsWith('2231'));
     else if (filtroEspecialidade === 'enfermeiro') lista = lista.filter(p => p.cbo?.startsWith('2235'));
     else if (filtroEspecialidade === 'dentista') lista = lista.filter(p => p.cbo?.startsWith('2232'));
-    if (filtroControle === 'pendentes') lista = lista.filter(p => !p.controle_concluido);
-    else if (filtroControle === 'concluidos') lista = lista.filter(p => p.controle_concluido);
+    if (filtroControle === 'pendentes') lista = lista.filter(p => !p.controle_feito);
+    else if (filtroControle === 'concluidos') lista = lista.filter(p => p.controle_feito);
     if (filtroDataInicio) lista = lista.filter(p => p.created_at >= filtroDataInicio);
     if (filtroDataFim) lista = lista.filter(p => p.created_at <= filtroDataFim + 'T23:59:59');
     return lista;
@@ -130,7 +130,7 @@ export default function Dashboard({ onNavigate }) {
     const semCPF = profissionais.filter(p => !p.cpf).length;
     const completude = total > 0 ? Math.round(((total - semCBO - semCPF) / total) * 100) : 0;
     const pendentes = solicitacoes.length;
-    const concluidos = profissionais.filter(p => p.controle_concluido).length;
+    const concluidos = profissionais.filter(p => p.controle_feito).length;
     return { total, unidades: unidades.length, medicos, enfermeiros, acs, dentistas, cbos, criadosHoje, alertas: semCBO + semCPF, completude, pendentes, concluidos };
   }, [profissionais, unidades, solicitacoes]);
 
@@ -173,7 +173,7 @@ export default function Dashboard({ onNavigate }) {
       case 'criadosHoje': lista = profissionais.filter(p => p.created_at?.startsWith(h)); titulo = `Cadastrados Hoje (${lista.length})`; break;
       case 'alertas': lista = profissionais.filter(p => !p.cbo || !p.cpf); titulo = `Alertas (${lista.length})`; break;
       case 'pendentes': setKpiModal(null); return;
-      case 'concluidos': lista = profissionais.filter(p => p.controle_concluido); titulo = `Concluídos (${lista.length})`; break;
+      case 'concluidos': lista = profissionais.filter(p => p.controle_feito); titulo = `Concluídos (${lista.length})`; break;
       default: return;
     }
     setKpiModal({ titulo, lista });
@@ -193,13 +193,12 @@ export default function Dashboard({ onNavigate }) {
     // ═══ MARCA NA HORA E NUNCA REVERTE ═══
     // O usuário disse: "uma vez marcada, não pode desmarcar mais"
     setProfissionais(prev => prev.map(p =>
-      p.id === id ? { ...p, controle_concluido: concluido } : p
+      p.id === id ? { ...p, controle_feito: concluido } : p
     ));
 
     // Tenta salvar no Supabase, mas se falhar, o checkbox CONTINUA MARCADO
     try {
-      // Coluna é INTEGER (0/1), não BOOLEAN — converte para o tipo certo
-      await supabase.from('profissionais').update({ controle_concluido: concluido ? 1 : 0 }).eq('id', id);
+      await supabase.from('profissionais').update({ controle_feito: concluido }).eq('id', id);
     } catch (e) {
       console.error('Erro ao salvar (checkbox continua marcado):', e.message);
     }
@@ -224,11 +223,11 @@ export default function Dashboard({ onNavigate }) {
   const marcarTodosConcluidos = async () => {
     try {
       for (const p of profissionaisFiltrados) {
-        const { error } = await supabase.from('profissionais').update({ controle_concluido: 1 }).eq('id', p.id);
+        const { error } = await supabase.from('profissionais').update({ controle_feito: true }).eq('id', p.id);
         if (error) throw error;
         // Atualiza individualmente APÓS cada confirmação do Supabase
         setProfissionais(prev => prev.map(pp =>
-          pp.id === p.id ? { ...pp, controle_concluido: true } : pp
+          pp.id === p.id ? { ...pp, controle_feito: true } : pp
         ));
       }
     } catch (e) { console.error('Erro:', e.message); }

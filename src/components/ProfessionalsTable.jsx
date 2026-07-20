@@ -21,9 +21,9 @@ export default function ProfessionalsTable({
             Nenhum profissional encontrado.
           </div>
         ) : profissionaisFiltrados.map((p, i) => {
-          const novo = isNovo(p.created_at) && !p.controle_concluido;
+          const novo = isNovo(p.created_at) && !p.controle_feito;
           return (
-            <div key={p.id} className={`bg-white rounded-lg border border-gray-300 p-3 shadow-sm ${p.controle_concluido ? 'opacity-70' : ''}`}>
+            <div key={p.id} className={`bg-white rounded-lg border border-gray-300 p-3 shadow-sm ${p.controle_feito ? 'opacity-70' : ''}`}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-sm text-gray-500">#{i + 1}</span>
@@ -33,9 +33,9 @@ export default function ProfessionalsTable({
                     </span>
                   )}
                 </div>
-                <input type="checkbox" checked={!!p.controle_concluido}
+                <input type="checkbox" checked={!!p.controle_feito}
                   onChange={e => onMarcarConcluido(p.id, e.target.checked)}
-                  className="w-5 h-5 cursor-pointer" title={p.controle_concluido ? 'Concluído' : 'Marcar como concluído'} />
+                  className="w-5 h-5 cursor-pointer" title={p.controle_feito ? 'Concluído' : 'Marcar como concluído'} />
               </div>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
                 <div><span className="text-gray-500">Nome:</span> <span className="font-bold">{p.nome_profissional || '—'}</span></div>
@@ -84,9 +84,9 @@ export default function ProfessionalsTable({
               </td>
             </tr>
           ) : profissionaisFiltrados.map((p, i) => {
-            const novo = isNovo(p.created_at) && !p.controle_concluido;
+            const novo = isNovo(p.created_at) && !p.controle_feito;
             return (
-              <tr key={p.id} className={`hover:bg-gray-50 ${p.controle_concluido ? 'opacity-70' : ''}`}>
+              <tr key={p.id} className={`hover:bg-gray-50 ${p.controle_feito ? 'opacity-70' : ''}`}>
                 <td className="border border-gray-400 px-2 py-1.5 text-center text-[clamp(11px,1.6vw,13px)]">
                   <div className="flex items-center justify-center gap-1">
                     {novo && (
@@ -95,9 +95,9 @@ export default function ProfessionalsTable({
                         Novo
                       </span>
                     )}
-                    <input type="checkbox" checked={!!p.controle_concluido}
+                    <input type="checkbox" checked={!!p.controle_feito}
                       onChange={e => onMarcarConcluido(p.id, e.target.checked)}
-                      className="w-4 h-4 cursor-pointer" title={p.controle_concluido ? 'Concluído' : 'Marcar como concluído'} />
+                      className="w-4 h-4 cursor-pointer" title={p.controle_feito ? 'Concluído' : 'Marcar como concluído'} />
                   </div>
                 </td>
                 <td className="border border-gray-400 px-2 py-1.5 text-center text-[clamp(11px,1.6vw,13px)] font-bold">{i + 1}</td>
