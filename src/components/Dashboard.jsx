@@ -38,12 +38,12 @@ export default function Dashboard({ onNavigate }) {
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('cnesDark') === 'true');
   const [notificacao, setNotificacao] = useState(null);
-
-  // Resetar página quando filtros mudarem
-  useEffect(() => { setPaginaAtual(1); }, [unidadeFiltro, buscaGlobal, filtroEspecialidade, filtroControle, filtroDataInicio, filtroDataFim, tipoBusca]);
   const [periodoFiltro, setPeriodoFiltro] = useState('12');
   const [filtroDataInicio, setFiltroDataInicio] = useState('');
   const [filtroDataFim, setFiltroDataFim] = useState('');
+
+  // Resetar página quando filtros mudarem
+  useEffect(() => { setPaginaAtual(1); }, [unidadeFiltro, buscaGlobal, filtroEspecialidade, filtroControle, filtroDataInicio, filtroDataFim, tipoBusca]);
 
   const bgColor = darkMode ? 'bg-gray-900' : 'bg-gray-100';
   const cardBg = darkMode ? 'bg-gray-800' : 'bg-white';

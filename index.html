@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#003c7d" />
     <meta name="description" content="Sistema de Atualização Cadastral dos Profissionais CNES - SEMUSA" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>CNES - SEMUSA</title>
   </head>
@@ -17,20 +17,26 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then((reg) => {
-            // Auto-reload quando um novo service worker for detectado
-            reg.addEventListener('updatefound', () => {
-              const novoSW = reg.installing;
-              novoSW.addEventListener('statechange', () => {
-                if (novoSW.state === 'installed' && navigator.serviceWorker.controller) {
-                  // Nova versão disponível — recarrega para ativar
-                  window.location.reload();
+          // Pequeno delay para estabilizar a navegação antes de registrar o SW
+          setTimeout(() => {
+            navigator.serviceWorker.register('/sw.js').then((reg) => {
+              reg.addEventListener('updatefound', () => {
+                const novoSW = reg.installing || reg.waiting;
+                if (novoSW) {
+                  novoSW.addEventListener('statechange', () => {
+                    if (novoSW.state === 'installed' && navigator.serviceWorker.controller) {
+                      window.location.reload();
+                    }
+                  });
                 }
               });
+            }).catch((err) => {
+              // AbortError é comum durante navegação/descarregamento — ignora silenciosamente
+              if (err.name !== 'AbortError') {
+                console.error('Erro ao registrar Service Worker:', err);
+              }
             });
-          }).catch((err) => {
-            console.error('Erro ao registrar Service Worker:', err);
-          });
+          }, 300);
         });
       }
     </script>
