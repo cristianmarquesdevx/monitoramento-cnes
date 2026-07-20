@@ -192,20 +192,23 @@ export default function Dashboard({ onNavigate }) {
   }, [buscaUnidade, unidades, unidadeFiltro]);
 
   const marcarConcluido = async (id, concluido) => {
-    // Salva o estado anterior por segurança
-    const estadoAnterior = profissionais.find(p => p.id === id)?.controle_concluido;
-
     try {
-      // Primeiro espera o Supabase confirmar a gravação
+      // Primeiro: atualiza no Supabase
       const { error } = await supabase.from('profissionais').update({ controle_concluido: concluido }).eq('id', id);
       if (error) throw error;
 
-      // SÓ DEPOIS atualiza o estado local — o checkbox fica fixo
+      // Segundo: SÓ DEPOIS atualiza o estado local — o checkbox fica fixo
       setProfissionais(prev => prev.map(p =>
         p.id === id ? { ...p, controle_concluido: concluido } : p
       ));
+    } catch (e) {
+      console.error('Erro ao marcar conclusão:', e.message);
+      return; // Não reverte — o Supabase pode ter salvo mesmo com erro aparente
+    }
 
-      if (concluido) {
+    // Auditoria é separada — se falhar, NÃO desmarca o checkbox
+    if (concluido) {
+      try {
         await supabase.rpc('log_audit', {
           p_usuario_id: user.id,
           p_usuario_nome: nomeUsuario,
@@ -214,13 +217,9 @@ export default function Dashboard({ onNavigate }) {
           p_target_id: String(id),
           p_descricao: `Marcou profissional ${id} como concluído`
         });
+      } catch (e) {
+        console.error('Erro ao registrar auditoria (não crítico):', e.message);
       }
-    } catch (e) {
-      console.error('Erro ao marcar conclusão:', e.message);
-      // Reverte o estado local se o Supabase falhar
-      setProfissionais(prev => prev.map(p =>
-        p.id === id ? { ...p, controle_concluido: estadoAnterior } : p
-      ));
     }
   };
 
