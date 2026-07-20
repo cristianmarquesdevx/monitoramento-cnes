@@ -54,7 +54,8 @@ export default function Dashboard({ onNavigate }) {
   useEffect(() => {
     const channel = supabase
       .channel('db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profissionais' }, () => refreshData())
+      // ⚠️ NÃO escuta 'profissionais' — o realtime desmarca o checkbox
+      //    (o update otimista + functional updater garantem o estado correto)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'unidades_saude' }, () => refreshData())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'solicitacoes' }, (payload) => {
         refreshData();
