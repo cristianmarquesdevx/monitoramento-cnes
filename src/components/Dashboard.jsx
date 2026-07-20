@@ -50,15 +50,12 @@ export default function Dashboard({ onNavigate }) {
 
   useEffect(() => { recarregar(); }, [recarregar]);
 
-  // Realtime notifications — refresh silencioso (sem skeleton)
+  // Realtime — APENAS notificação de solicitações novas, SEM refresh de dados
+  // (refresh faz o checkbox perder o estado otimista)
   useEffect(() => {
     const channel = supabase
       .channel('db-changes')
-      // ⚠️ NÃO escuta 'profissionais' — o realtime desmarca o checkbox
-      //    (o update otimista + functional updater garantem o estado correto)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'unidades_saude' }, () => refreshData())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'solicitacoes' }, (payload) => {
-        refreshData();
         const tipo = payload.new?.tipo === 'update' ? 'Alteração' : payload.new?.tipo === 'delete' ? 'Exclusão' : 'Nova';
         setNotificacao({ msg: `Nova solicitação de ${tipo}`, tipo: 'info' });
         setTimeout(() => setNotificacao(null), 5000);
@@ -67,7 +64,7 @@ export default function Dashboard({ onNavigate }) {
         setRealtimeAtivo(status === 'SUBSCRIBED');
       });
     return () => { supabase.removeChannel(channel); };
-  }, [refreshData]);
+  }, []);
 
   const hoje = new Date().toISOString().split('T')[0];
   const [dataEmissao, setDataEmissao] = useState(hoje);
