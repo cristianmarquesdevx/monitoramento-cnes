@@ -17,7 +17,20 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js');
+          navigator.serviceWorker.register('/sw.js').then((reg) => {
+            // Auto-reload quando um novo service worker for detectado
+            reg.addEventListener('updatefound', () => {
+              const novoSW = reg.installing;
+              novoSW.addEventListener('statechange', () => {
+                if (novoSW.state === 'installed' && navigator.serviceWorker.controller) {
+                  // Nova versão disponível — recarrega para ativar
+                  window.location.reload();
+                }
+              });
+            });
+          }).catch((err) => {
+            console.error('Erro ao registrar Service Worker:', err);
+          });
         });
       }
     </script>
