@@ -18,7 +18,7 @@ const MultiLotacaoModal = lazy(() => import('./MultiLotacaoModal'));
 const DuplicadosModal = lazy(() => import('./DuplicadosModal'));
 
 export default function Dashboard({ onNavigate }) {
-  const { unidades, profissionais, solicitacoes, loading, recarregar, setProfissionais } = useData();
+  const { unidades, profissionais, solicitacoes, loading, refreshData, recarregar, setProfissionais } = useData();
   const { user, profile, signOut, isEditor, isAdmin } = useAuth();
   const [unidadeFiltro, setUnidadeFiltro] = useState('__todos__');
   const [buscaUnidade, setBuscaUnidade] = useState('');
@@ -50,14 +50,14 @@ export default function Dashboard({ onNavigate }) {
 
   useEffect(() => { recarregar(); }, [recarregar]);
 
-  // Realtime notifications for new solicitations
+  // Realtime notifications — refresh silencioso (sem skeleton)
   useEffect(() => {
     const channel = supabase
       .channel('db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profissionais' }, () => recarregar())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'unidades_saude' }, () => recarregar())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profissionais' }, () => refreshData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'unidades_saude' }, () => refreshData())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'solicitacoes' }, (payload) => {
-        recarregar();
+        refreshData();
         const tipo = payload.new?.tipo === 'update' ? 'Alteração' : payload.new?.tipo === 'delete' ? 'Exclusão' : 'Nova';
         setNotificacao({ msg: `Nova solicitação de ${tipo}`, tipo: 'info' });
         setTimeout(() => setNotificacao(null), 5000);
@@ -66,7 +66,7 @@ export default function Dashboard({ onNavigate }) {
         setRealtimeAtivo(status === 'SUBSCRIBED');
       });
     return () => { supabase.removeChannel(channel); };
-  }, [recarregar]);
+  }, [refreshData]);
 
   const hoje = new Date().toISOString().split('T')[0];
   const [dataEmissao, setDataEmissao] = useState(hoje);
@@ -192,19 +192,35 @@ export default function Dashboard({ onNavigate }) {
   }, [buscaUnidade, unidades, unidadeFiltro]);
 
   const marcarConcluido = async (id, concluido) => {
-    // Update otimista: altera o estado local NA HORA para o checkbox responder
-    setProfissionais(prev => prev.map(p => p.id === id ? { ...p, controle_concluido: concluido } : p));
+    // Salva o estado anterior por segurança
+    const estadoAnterior = profissionais.find(p => p.id === id)?.controle_concluido;
 
     try {
+      // Primeiro espera o Supabase confirmar a gravação
       const { error } = await supabase.from('profissionais').update({ controle_concluido: concluido }).eq('id', id);
       if (error) throw error;
+
+      // SÓ DEPOIS atualiza o estado local — o checkbox fica fixo
+      setProfissionais(prev => prev.map(p =>
+        p.id === id ? { ...p, controle_concluido: concluido } : p
+      ));
+
       if (concluido) {
-        await supabase.rpc('log_audit', { p_usuario_id: user.id, p_usuario_nome: nomeUsuario, p_acao: 'controle', p_tipo: 'profissional', p_target_id: String(id), p_descricao: `Marcou profissional ${id} como concluído` });
+        await supabase.rpc('log_audit', {
+          p_usuario_id: user.id,
+          p_usuario_nome: nomeUsuario,
+          p_acao: 'controle',
+          p_tipo: 'profissional',
+          p_target_id: String(id),
+          p_descricao: `Marcou profissional ${id} como concluído`
+        });
       }
     } catch (e) {
-      console.error('Erro:', e.message);
+      console.error('Erro ao marcar conclusão:', e.message);
       // Reverte o estado local se o Supabase falhar
-      recarregar();
+      setProfissionais(prev => prev.map(p =>
+        p.id === id ? { ...p, controle_concluido: estadoAnterior } : p
+      ));
     }
   };
 
@@ -213,8 +229,11 @@ export default function Dashboard({ onNavigate }) {
       for (const p of profissionaisFiltrados) {
         const { error } = await supabase.from('profissionais').update({ controle_concluido: true }).eq('id', p.id);
         if (error) throw error;
+        // Atualiza individualmente APÓS cada confirmação do Supabase
+        setProfissionais(prev => prev.map(pp =>
+          pp.id === p.id ? { ...pp, controle_concluido: true } : pp
+        ));
       }
-      recarregar();
     } catch (e) { console.error('Erro:', e.message); }
   };
 
@@ -314,7 +333,7 @@ export default function Dashboard({ onNavigate }) {
   }, [profissionais]);
 
   const getCboDesc = (codigo) => listaCBO.find(c => c.codigo === codigo)?.descricao || codigo || '';
-  const handleAprovacaoCompleta = () => { setSolicitacaoModal(null); recarregar(); };
+  const handleAprovacaoCompleta = () => { setSolicitacaoModal(null); refreshData(); };
 
   return (
     <div className={`min-h-screen ${bgColor} transition-colors duration-300`}>
@@ -447,7 +466,7 @@ export default function Dashboard({ onNavigate }) {
                   <span className="flex-1"><strong>{sol.tipo === 'update' ? 'Alteração' : 'Exclusão'}</strong> - {prof?.nome_profissional || sol.dados_antigos?.nome_profissional || `ID ${sol.profissional_id}`} <span className="text-gray-500">{new Date(sol.criado_em).toLocaleString()}</span></span>
                   <div className="flex gap-1 self-end sm:self-auto">
                     {isEditor ? (<><button onClick={() => setSolicitacaoModal(sol)} className="bg-green-500 hover:bg-green-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Aprovar</button>
-                    <button onClick={async () => { if (window.confirm(`Rejeitar?`)) { await supabase.from('solicitacoes').update({ status: 'rejeitado' }).eq('id', sol.id); recarregar(); } }} className="bg-red-500 hover:bg-red-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Rejeitar</button></>) : (<span className="text-gray-400 text-[10px] italic">Apenas admin/editor</span>)}
+                    <button onClick={async () => { if (window.confirm(`Rejeitar?`)) { await supabase.from('solicitacoes').update({ status: 'rejeitado' }).eq('id', sol.id); refreshData(); } }} className="bg-red-500 hover:bg-red-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Rejeitar</button></>) : (<span className="text-gray-400 text-[10px] italic">Apenas admin/editor</span>)}
                   </div>
                 </div>
               );
@@ -539,7 +558,7 @@ export default function Dashboard({ onNavigate }) {
           multiLotacaoData={multiLotacaoData}
           unidades={unidades}
           profissionais={profissionais}
-          onComplete={() => recarregar()}
+          onComplete={() => refreshData()}
         />
       </Suspense>
       <Suspense fallback={null}>
@@ -548,7 +567,7 @@ export default function Dashboard({ onNavigate }) {
           onClose={() => setDuplicadosModalOpen(false)}
           duplicadosData={duplicadosData}
           unidades={unidades}
-          onComplete={() => recarregar()}
+          onComplete={() => refreshData()}
         />
       </Suspense>
     </div>
