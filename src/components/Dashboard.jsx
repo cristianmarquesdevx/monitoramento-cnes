@@ -18,7 +18,7 @@ const MultiLotacaoModal = lazy(() => import('./MultiLotacaoModal'));
 const DuplicadosModal = lazy(() => import('./DuplicadosModal'));
 
 export default function Dashboard({ onNavigate }) {
-  const { unidades, profissionais, solicitacoes, loading, recarregar } = useData();
+  const { unidades, profissionais, solicitacoes, loading, recarregar, setProfissionais } = useData();
   const { user, profile, signOut, isEditor, isAdmin } = useAuth();
   const [unidadeFiltro, setUnidadeFiltro] = useState('__todos__');
   const [buscaUnidade, setBuscaUnidade] = useState('');
@@ -192,14 +192,20 @@ export default function Dashboard({ onNavigate }) {
   }, [buscaUnidade, unidades, unidadeFiltro]);
 
   const marcarConcluido = async (id, concluido) => {
+    // Update otimista: altera o estado local NA HORA para o checkbox responder
+    setProfissionais(prev => prev.map(p => p.id === id ? { ...p, controle_concluido: concluido } : p));
+
     try {
       const { error } = await supabase.from('profissionais').update({ controle_concluido: concluido }).eq('id', id);
       if (error) throw error;
       if (concluido) {
         await supabase.rpc('log_audit', { p_usuario_id: user.id, p_usuario_nome: nomeUsuario, p_acao: 'controle', p_tipo: 'profissional', p_target_id: String(id), p_descricao: `Marcou profissional ${id} como concluído` });
       }
+    } catch (e) {
+      console.error('Erro:', e.message);
+      // Reverte o estado local se o Supabase falhar
       recarregar();
-    } catch (e) { console.error('Erro:', e.message); }
+    }
   };
 
   const marcarTodosConcluidos = async () => {

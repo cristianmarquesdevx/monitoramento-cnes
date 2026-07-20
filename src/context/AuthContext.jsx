@@ -24,15 +24,27 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // Timeout de segurança: se o Supabase não responder em 8s, sai do loading
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        fetchProfile(currentUser.id);
-      }
+    const timeout = setTimeout(() => {
       setLoading(false);
-    });
+    }, 8000);
+
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        clearTimeout(timeout);
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        if (currentUser) {
+          fetchProfile(currentUser.id);
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        clearTimeout(timeout);
+        console.error('Erro ao verificar sessão:', err.message);
+        setLoading(false);
+      });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const currentUser = session?.user ?? null;
@@ -44,7 +56,10 @@ export function AuthProvider({ children }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, [fetchProfile]);
 
   const signIn = useCallback(async (email, password) => {

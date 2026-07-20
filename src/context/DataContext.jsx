@@ -35,7 +35,7 @@ export function DataProvider({ children }) {
   }, [loadData]);
 
   return (
-    <DataContext.Provider value={{ unidades, profissionais, solicitacoes, loading, loadData, recarregar, setSolicitacoes }}>
+    <DataContext.Provider value={{ unidades, profissionais, solicitacoes, loading, loadData, recarregar, setSolicitacoes, setProfissionais, setUnidades }}>
       {children}
     </DataContext.Provider>
   );

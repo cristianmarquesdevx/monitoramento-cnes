@@ -127,7 +127,9 @@ export default function MultiLotacaoModal({ isOpen, onClose, multiLotacaoData, u
                               </span>
                               {prof.cnes && (
                                 <span className="text-gray-400">| CNES: {prof.cnes}</span>
-                              {prof.cns && <span className="text-gray-400">| CNS: {prof.cns}</span>}
+                              )}
+                              {prof.cns && (
+                                <span className="text-gray-400">| CNS: {prof.cns}</span>
                               )}
                             </div>
                             <div className="flex items-center gap-1 text-gray-600">
