@@ -24,11 +24,11 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  // Timeout de segurança: se o Supabase não responder em 8s, sai do loading
+  // Timeout de segurança: se o Supabase não responder, sai do loading
   useEffect(() => {
     const timeout = setTimeout(() => {
       setLoading(false);
-    }, 8000);
+    }, 4000);
 
     supabase.auth.getSession()
       .then(({ data: { session } }) => {

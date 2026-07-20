@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { PlusCircle, Edit3, Trash2, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 
 const ITENS = [
@@ -9,7 +10,7 @@ const ITENS = [
   { key: 'alertasCriticos', label: 'Alertas críticos', icon: AlertTriangle, color: 'text-orange-600 bg-orange-50 border-orange-300' },
 ];
 
-export default function TodayKPIs({ stats, onKpiClick }) {
+const TodayKPIs = memo(function TodayKPIs({ stats, onKpiClick }) {
   return (
     <div className="flex flex-wrap gap-1.5 mb-2">
       {ITENS.map(item => {
@@ -33,4 +34,7 @@ export default function TodayKPIs({ stats, onKpiClick }) {
       })}
     </div>
   );
-}
+});
+
+export default TodayKPIs;
+

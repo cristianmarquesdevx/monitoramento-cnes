@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 
 function isNovo(createdAt) {
@@ -6,7 +7,7 @@ function isNovo(createdAt) {
   return Date.now() - new Date(createdAt).getTime() < horas72;
 }
 
-export default function ProfessionalsTable({
+function ProfessionalsTable({
   profissionaisFiltrados,
   onMarcarConcluido,
   getCboDesc,
@@ -122,3 +123,5 @@ export default function ProfessionalsTable({
     </div>
   );
 }
+
+export default memo(ProfessionalsTable);

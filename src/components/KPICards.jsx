@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Users, Building2, Stethoscope, UserRound, UsersRound, Tags, Calendar, AlertTriangle, Percent, Clock, CheckCircle, Sparkles } from 'lucide-react';
 
 const ITENS = [
@@ -15,7 +16,7 @@ const ITENS = [
   { key: 'concluidos', label: 'Concluídos', icon: CheckCircle, color: 'border-l-green-500', filtro: 'concluidos' },
 ];
 
-export default function KPICards({ kpis, onKpiClick }) {
+const KPICards = memo(function KPICards({ kpis, onKpiClick }) {
   return (
     <div className="flex flex-wrap gap-2.5 mb-3">
       {ITENS.map(item => {
@@ -41,4 +42,7 @@ export default function KPICards({ kpis, onKpiClick }) {
       })}
     </div>
   );
-}
+});
+
+export default KPICards;
+

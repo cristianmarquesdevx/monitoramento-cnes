@@ -37,3 +37,8 @@ __pycache__/
 *.sln
 *.sw?
 .vercel
+
+# Supabase CLI temp files
+supabase/.temp/
+supabase/.branches
+*.env

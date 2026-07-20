@@ -37,11 +37,9 @@ function AppContent() {
   }
 
   return (
-    <ErrorBoundary>
-      <DataProvider>
-        <Dashboard onNavigate={setPage} />
-      </DataProvider>
-    </ErrorBoundary>
+    <DataProvider>
+      <Dashboard onNavigate={setPage} />
+    </DataProvider>
   );
 }
 

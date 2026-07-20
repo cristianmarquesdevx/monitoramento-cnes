@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useEffect, useState, useMemo, useCallback, lazy, Suspense, useRef } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -8,8 +8,6 @@ import KPICards from './KPICards';
 import ProfessionalsTable from './ProfessionalsTable';
 import TodayKPIs from './TodayKPIs';
 import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3, UserCircle, Sun, Moon, Shield, History, Bell, Eye, Trash2, Fingerprint } from 'lucide-react';
-
-const ITENS_POR_PAGINA = 50;
 
 const ChartsGrid = lazy(() => import('./ChartsGrid'));
 const ApprovalModal = lazy(() => import('./ApprovalModal'));
@@ -28,7 +26,7 @@ export default function Dashboard({ onNavigate }) {
   const [buscaGlobal, setBuscaGlobal] = useState('');
   const [filtroEspecialidade, setFiltroEspecialidade] = useState('todos');
   const [filtroControle, setFiltroControle] = useState('todos');
-  const [tipoBusca, setTipoBusca] = useState('geral'); // 'geral' | 'cpf' | 'cns'
+  const [tipoBusca, setTipoBusca] = useState('geral');
   const [solicitacaoModal, setSolicitacaoModal] = useState(null);
   const [kpiModal, setKpiModal] = useState(null);
   const [relatoriosModal, setRelatoriosModal] = useState(false);
@@ -36,14 +34,18 @@ export default function Dashboard({ onNavigate }) {
   const [duplicadosModalOpen, setDuplicadosModalOpen] = useState(false);
   const [unidadesSemCadastroModalOpen, setUnidadesSemCadastroModalOpen] = useState(false);
   const [paginaAtual, setPaginaAtual] = useState(1);
+  const [itensPorPagina, setItensPorPagina] = useState(50);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('cnesDark') === 'true');
   const [notificacao, setNotificacao] = useState(null);
   const [periodoFiltro, setPeriodoFiltro] = useState('12');
   const [filtroDataInicio, setFiltroDataInicio] = useState('');
   const [filtroDataFim, setFiltroDataFim] = useState('');
+  const [realtimeAtivo, setRealtimeAtivo] = useState(false);
+  const [dataEmissao, setDataEmissao] = useState(() => new Date().toISOString().split('T')[0]);
+  const buscaRef = useRef(null);
 
   // Resetar página quando filtros mudarem
-  useEffect(() => { setPaginaAtual(1); }, [unidadeFiltro, buscaGlobal, filtroEspecialidade, filtroControle, filtroDataInicio, filtroDataFim, tipoBusca]);
+  useEffect(() => { setPaginaAtual(1); }, [unidadeFiltro, buscaGlobal, filtroEspecialidade, filtroControle, filtroDataInicio, filtroDataFim, tipoBusca, itensPorPagina]);
 
   const bgColor = darkMode ? 'bg-gray-900' : 'bg-gray-100';
   const cardBg = darkMode ? 'bg-gray-800' : 'bg-white';
@@ -59,7 +61,6 @@ export default function Dashboard({ onNavigate }) {
   useEffect(() => { recarregar(); }, [recarregar]);
 
   // Realtime — APENAS notificação de solicitações novas, SEM refresh de dados
-  // (refresh faz o checkbox perder o estado otimista)
   useEffect(() => {
     const channel = supabase
       .channel('db-changes')
@@ -74,10 +75,19 @@ export default function Dashboard({ onNavigate }) {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const hoje = new Date().toISOString().split('T')[0];
-  const [dataEmissao, setDataEmissao] = useState(hoje);
+  // Ctrl+K — foca na busca
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        buscaRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const statusConexao = 'Conectado';
-  const [realtimeAtivo, setRealtimeAtivo] = useState(false);
 
   const nomeUsuario = profile?.nome || user?.user_metadata?.nome || user?.email?.split('@')[0] || 'Usuário';
   const emailUsuario = user?.email || '';
@@ -126,10 +136,10 @@ export default function Dashboard({ onNavigate }) {
   }, [profissionais, unidadeFiltro, buscaGlobal, filtroEspecialidade, filtroControle, filtroDataInicio, filtroDataFim]);
 
   // Paginação
-  const totalPaginas = Math.max(1, Math.ceil(profissionaisFiltrados.length / ITENS_POR_PAGINA));
+  const totalPaginas = Math.max(1, Math.ceil(profissionaisFiltrados.length / itensPorPagina));
   const paginaAtualSegura = Math.min(paginaAtual, totalPaginas);
-  const inicio = (paginaAtualSegura - 1) * ITENS_POR_PAGINA;
-  const paginaAtualData = profissionaisFiltrados.slice(inicio, inicio + ITENS_POR_PAGINA);
+  const inicio = (paginaAtualSegura - 1) * itensPorPagina;
+  const paginaAtualData = profissionaisFiltrados.slice(inicio, inicio + itensPorPagina);
 
   // Unidades sem nenhum profissional cadastrado
   const unidadesSemCadastro = useMemo(() => {
@@ -242,13 +252,24 @@ export default function Dashboard({ onNavigate }) {
 
   const marcarTodosConcluidos = async () => {
     try {
-      for (const p of profissionaisFiltrados) {
-        const { error } = await supabase.from('profissionais').update({ controle_feito: true }).eq('id', p.id);
-        if (error) throw error;
-        // Atualiza individualmente APÓS cada confirmação do Supabase
-        setProfissionais(prev => prev.map(pp =>
-          pp.id === p.id ? { ...pp, controle_feito: true } : pp
-        ));
+      const results = await Promise.allSettled(
+        profissionaisFiltrados.map(p =>
+          supabase.from('profissionais').update({ controle_feito: true }).eq('id', p.id)
+        )
+      );
+      // Atualiza todos que tiveram sucesso
+      const falhas = [];
+      results.forEach((r, i) => {
+        if (r.status === 'fulfilled') {
+          setProfissionais(prev => prev.map(pp =>
+            pp.id === profissionaisFiltrados[i].id ? { ...pp, controle_feito: true } : pp
+          ));
+        } else {
+          falhas.push(profissionaisFiltrados[i].id);
+        }
+      });
+      if (falhas.length > 0) {
+        console.error('Falhas ao marcar:', falhas.length);
       }
     } catch (e) { console.error('Erro:', e.message); }
   };
@@ -363,13 +384,13 @@ export default function Dashboard({ onNavigate }) {
       {/* Header */}
       <div className={`${cardBg} border-b-2 border-[var(--cor-primaria)] transition-colors`}>
         <div className="flex items-center justify-between px-3 md:px-4 py-2.5 flex-wrap gap-2.5">
-          <img src="/logo_prefeitura.png" alt="Prefeitura" className="h-[40px] md:h-[55px]" />
+          <img src="/logo_prefeitura.png" alt="Prefeitura" className="h-[40px] md:h-[55px]" loading="lazy" />
           <div className="flex-1 text-center min-w-[180px] md:min-w-[200px]">
             <h2 className={`text-[var(--cor-primaria)] text-[clamp(12px,2.5vw,18px)] font-bold leading-tight`}>PREFEITURA DO MUNICÍPIO DE PORTO VELHO</h2>
             <h3 className={`text-[var(--cor-primaria)] text-[clamp(10px,1.8vw,14px)]`}>SECRETARIA MUNICIPAL DE SAÚDE – SEMUSA</h3>
             <h3 className={`text-[var(--cor-primaria)] text-[clamp(10px,1.8vw,14px)]`}>DIVISÃO DE CONTROLE E AVALIAÇÃO DO SUS</h3>
           </div>
-          <img src="/logo_cnes.png" alt="CNES" className="h-[40px] md:h-[55px]" />
+          <img src="/logo_cnes.png" alt="CNES" className="h-[40px] md:h-[55px]" loading="lazy" />
         </div>
         <div className="bg-[var(--cor-primaria)] text-white text-center py-2 px-3 font-bold text-[clamp(13px,2.5vw,17px)]">
           PLANILHA DE ATUALIZAÇÃO CADASTRAL DOS PROFISSIONAIS – CNES
@@ -515,7 +536,7 @@ export default function Dashboard({ onNavigate }) {
             <option value="cns">CNS</option>
           </select>
         </div>
-        <input type="text" value={buscaGlobal} onChange={e => setBuscaGlobal(e.target.value)}
+        <input ref={buscaRef} type="text" value={buscaGlobal} onChange={e => setBuscaGlobal(e.target.value)}
           placeholder={tipoBusca === 'cpf' ? '🔍 Buscar por CPF (11 dígitos)' : tipoBusca === 'cns' ? '🔍 Buscar por CNS (15 dígitos)' : '🔍 Buscar por nome, CPF, CNS, CBO...'}
           maxLength={tipoBusca === 'cpf' ? 14 : tipoBusca === 'cns' ? 15 : undefined}
           className={`flex-1 min-w-[180px] md:min-w-[200px] px-2 md:px-3 py-2 border ${borderColor} rounded text-xs md:text-sm ${cardBg} ${textColor}`} />
@@ -551,8 +572,18 @@ export default function Dashboard({ onNavigate }) {
       <ProfessionalsTable profissionaisFiltrados={paginaAtualData} onMarcarConcluido={marcarConcluido} getCboDesc={getCboDesc} paginaAtual={paginaAtualSegura} />
 
       {/* Pagination Controls */}
-      {totalPaginas > 1 && (
-        <div className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-3 ${bgColor} border-t ${borderColor} flex-wrap`}>
+      <div className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-3 ${bgColor} border-t ${borderColor} flex-wrap`}>
+        <div className="flex items-center gap-1.5 mr-3">
+          <span className={`text-xs ${mutedText}`}>Por página:</span>
+          <select value={itensPorPagina} onChange={e => setItensPorPagina(Number(e.target.value))}
+            className={`text-xs px-1.5 py-1 border ${borderColor} rounded ${cardBg} ${textColor} cursor-pointer`}>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+        {totalPaginas > 1 && (
+          <>
           <button
             onClick={() => setPaginaAtual(p => Math.max(1, p - 1))}
             disabled={paginaAtualSegura <= 1}
@@ -596,11 +627,12 @@ export default function Dashboard({ onNavigate }) {
           >
             Próximo »
           </button>
-          <span className={`text-xs ${mutedText} ml-2`}>
-            Página {paginaAtualSegura} de {totalPaginas} ({profissionaisFiltrados.length} registros)
-          </span>
-        </div>
-      )}
+          </>
+        )}
+        <span className={`text-xs ${mutedText} ml-2`}>
+          Página {paginaAtualSegura} de {totalPaginas} ({profissionaisFiltrados.length} registros)
+        </span>
+      </div>
 
       <div className={`mt-auto ${bgColor} border-t-2 border-[var(--cor-primaria)] px-3 md:px-5 py-4 text-center text-[11px] md:text-xs ${textColor}`}>
         <p className="my-0.5">Desenvolvido por Cristian Marques</p>
@@ -619,9 +651,11 @@ export default function Dashboard({ onNavigate }) {
       <Suspense fallback={null}>
         <ApprovalModal isOpen={!!solicitacaoModal} onClose={() => setSolicitacaoModal(null)} solicitacao={solicitacaoModal} unidades={unidades} profissionais={profissionais} currentUser={{ id: user?.id, nome: nomeUsuario }} onComplete={handleAprovacaoCompleta} />
       </Suspense>
-      <Suspense fallback={null}>
-        <PrintFicha profissionais={profissionaisFiltrados} unidade={unidadeSelecionada} dataEmissao={dataEmissao} getCboDesc={getCboDesc} />
-      </Suspense>
+      {profissionaisFiltrados.length > 0 && (
+        <Suspense fallback={null}>
+          <PrintFicha profissionais={profissionaisFiltrados} unidade={unidadeSelecionada} dataEmissao={dataEmissao} getCboDesc={getCboDesc} />
+        </Suspense>
+      )}
         <Suspense fallback={null}>
           <MultiLotacaoModal
             isOpen={multiLotacaoModalOpen}

@@ -65,7 +65,7 @@ export default function LoginScreen() {
 
         {/* Header - igual ao dashboard */}
         <div className={`flex items-center justify-between px-4 py-3 flex-wrap gap-2.5 ${dark ? 'bg-[#1e1e2e]' : 'bg-white'}`}>
-          <img src="/logo_prefeitura.png" alt="Prefeitura" className="h-[55px]" />
+          <img src="/logo_prefeitura.png" alt="Prefeitura" className="h-[55px]" loading="lazy" />
           <div className="flex-1 text-center min-w-[200px]">
             <h2 className={`text-[clamp(13px,2.2vw,16px)] font-bold mb-0.5 ${dark ? 'text-[#8ab4f8]' : 'text-[var(--cor-primaria)]'}`}>
               PREFEITURA DO MUNICÍPIO DE PORTO VELHO
@@ -77,7 +77,7 @@ export default function LoginScreen() {
               DIVISÃO DE CONTROLE E AVALIAÇÃO DO SUS
             </h4>
           </div>
-          <img src="/logo_cnes.png" alt="CNES" className="h-[55px]" />
+          <img src="/logo_cnes.png" alt="CNES" className="h-[55px]" loading="lazy" />
         </div>
 
         {/* Barra azul */}
@@ -92,7 +92,7 @@ export default function LoginScreen() {
             <span>Faça login para continuar</span>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4" id="login-form">
             {error && (
               <div className="flex items-center gap-2 bg-red-100 text-red-800 px-3.5 py-2.5 rounded-md text-sm animate-[loginShake_0.4s_ease-out]">
                 <Mail size={14} />
@@ -133,6 +133,14 @@ export default function LoginScreen() {
                 <><LogIn size={18} /> Entrar</>
               )}
             </button>
+
+            <div className="text-center -mt-2">
+              <button type="button"
+                onClick={() => setError('Entre em contato com o administrador para redefinir sua senha.')}
+                className="text-xs text-[var(--cor-primaria)] hover:text-[var(--cor-primaria-hover)] underline cursor-pointer transition-colors">
+                Esqueceu sua senha?
+              </button>
+            </div>
           </form>
 
           <div className="mt-4 pt-3.5 border-t border-gray-200 text-center">
