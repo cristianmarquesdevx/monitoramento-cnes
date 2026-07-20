@@ -198,7 +198,8 @@ export default function Dashboard({ onNavigate }) {
 
     // Tenta salvar no Supabase, mas se falhar, o checkbox CONTINUA MARCADO
     try {
-      await supabase.from('profissionais').update({ controle_concluido: concluido }).eq('id', id);
+      // Coluna é INTEGER (0/1), não BOOLEAN — converte para o tipo certo
+      await supabase.from('profissionais').update({ controle_concluido: concluido ? 1 : 0 }).eq('id', id);
     } catch (e) {
       console.error('Erro ao salvar (checkbox continua marcado):', e.message);
     }
@@ -223,7 +224,7 @@ export default function Dashboard({ onNavigate }) {
   const marcarTodosConcluidos = async () => {
     try {
       for (const p of profissionaisFiltrados) {
-        const { error } = await supabase.from('profissionais').update({ controle_concluido: true }).eq('id', p.id);
+        const { error } = await supabase.from('profissionais').update({ controle_concluido: 1 }).eq('id', p.id);
         if (error) throw error;
         // Atualiza individualmente APÓS cada confirmação do Supabase
         setProfissionais(prev => prev.map(pp =>
