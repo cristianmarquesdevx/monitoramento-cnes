@@ -9,6 +9,8 @@ import ProfessionalsTable from './ProfessionalsTable';
 import TodayKPIs from './TodayKPIs';
 import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3, UserCircle, Sun, Moon, Shield, History, Bell, Eye, Trash2, Fingerprint } from 'lucide-react';
 
+const ITENS_POR_PAGINA = 50;
+
 const ChartsGrid = lazy(() => import('./ChartsGrid'));
 const ApprovalModal = lazy(() => import('./ApprovalModal'));
 const KpiDetailModal = lazy(() => import('./KpiDetailModal'));
@@ -16,6 +18,7 @@ const ReportsModal = lazy(() => import('./ReportsModal'));
 const PrintFicha = lazy(() => import('./PrintFicha'));
 const MultiLotacaoModal = lazy(() => import('./MultiLotacaoModal'));
 const DuplicadosModal = lazy(() => import('./DuplicadosModal'));
+const UnidadesSemCadastroModal = lazy(() => import('./UnidadesSemCadastroModal'));
 
 export default function Dashboard({ onNavigate }) {
   const { unidades, profissionais, solicitacoes, loading, refreshData, recarregar, setProfissionais } = useData();
@@ -31,8 +34,13 @@ export default function Dashboard({ onNavigate }) {
   const [relatoriosModal, setRelatoriosModal] = useState(false);
   const [multiLotacaoModalOpen, setMultiLotacaoModalOpen] = useState(false);
   const [duplicadosModalOpen, setDuplicadosModalOpen] = useState(false);
+  const [unidadesSemCadastroModalOpen, setUnidadesSemCadastroModalOpen] = useState(false);
+  const [paginaAtual, setPaginaAtual] = useState(1);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('cnesDark') === 'true');
   const [notificacao, setNotificacao] = useState(null);
+
+  // Resetar página quando filtros mudarem
+  useEffect(() => { setPaginaAtual(1); }, [unidadeFiltro, buscaGlobal, filtroEspecialidade, filtroControle, filtroDataInicio, filtroDataFim, tipoBusca]);
   const [periodoFiltro, setPeriodoFiltro] = useState('12');
   const [filtroDataInicio, setFiltroDataInicio] = useState('');
   const [filtroDataFim, setFiltroDataFim] = useState('');
@@ -116,6 +124,18 @@ export default function Dashboard({ onNavigate }) {
     if (filtroDataFim) lista = lista.filter(p => p.created_at <= filtroDataFim + 'T23:59:59');
     return lista;
   }, [profissionais, unidadeFiltro, buscaGlobal, filtroEspecialidade, filtroControle, filtroDataInicio, filtroDataFim]);
+
+  // Paginação
+  const totalPaginas = Math.max(1, Math.ceil(profissionaisFiltrados.length / ITENS_POR_PAGINA));
+  const paginaAtualSegura = Math.min(paginaAtual, totalPaginas);
+  const inicio = (paginaAtualSegura - 1) * ITENS_POR_PAGINA;
+  const paginaAtualData = profissionaisFiltrados.slice(inicio, inicio + ITENS_POR_PAGINA);
+
+  // Unidades sem nenhum profissional cadastrado
+  const unidadesSemCadastro = useMemo(() => {
+    const cnesComProf = new Set(profissionais.map(p => p.cnes));
+    return unidades.filter(u => !cnesComProf.has(u.cnes));
+  }, [unidades, profissionais]);
 
   const kpis = useMemo(() => {
     const total = profissionais.length;
@@ -510,6 +530,9 @@ export default function Dashboard({ onNavigate }) {
         </select>
         <span className={`text-xs md:text-sm ${mutedText}`}>{loading ? <span className="inline-block w-16 h-4 bg-gray-200 animate-pulse rounded" /> : `${profissionaisFiltrados.length} encontrados`}</span>
         {isEditor && <button onClick={marcarTodosConcluidos} className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded font-bold text-[11px] md:text-xs flex items-center gap-1.5 cursor-pointer"><CheckCheck size={14} /> Concluir</button>}
+        <button onClick={() => setUnidadesSemCadastroModalOpen(true)} className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded font-bold text-[11px] md:text-xs flex items-center gap-1.5 cursor-pointer">
+          <Users size={14} /> Relacionar
+        </button>
       </div>
 
       <div className="bg-[var(--cor-primaria)] text-white px-3 md:px-4 py-1 font-bold text-xs md:text-sm">1. DADOS DA UNIDADE</div>
@@ -525,7 +548,59 @@ export default function Dashboard({ onNavigate }) {
       </div>
 
       <div className="bg-[var(--cor-primaria)] text-white px-3 md:px-4 py-1 font-bold text-xs md:text-sm">2. RELAÇÃO DOS PROFISSIONAIS</div>
-      <ProfessionalsTable profissionaisFiltrados={profissionaisFiltrados} onMarcarConcluido={marcarConcluido} getCboDesc={getCboDesc} />
+      <ProfessionalsTable profissionaisFiltrados={paginaAtualData} onMarcarConcluido={marcarConcluido} getCboDesc={getCboDesc} paginaAtual={paginaAtualSegura} />
+
+      {/* Pagination Controls */}
+      {totalPaginas > 1 && (
+        <div className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-3 ${bgColor} border-t ${borderColor} flex-wrap`}>
+          <button
+            onClick={() => setPaginaAtual(p => Math.max(1, p - 1))}
+            disabled={paginaAtualSegura <= 1}
+            className={`px-3 py-1.5 rounded text-xs font-bold cursor-pointer transition-all ${paginaAtualSegura <= 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-[var(--cor-primaria)] hover:text-white'} ${cardBg} ${textColor} border ${borderColor}`}
+          >
+            « Anterior
+          </button>
+          {(() => {
+            const pages = [];
+            const maxVisible = 5;
+            let start = Math.max(1, paginaAtualSegura - Math.floor(maxVisible / 2));
+            let end = Math.min(totalPaginas, start + maxVisible - 1);
+            if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1);
+            if (start > 1) pages.push(1);
+            if (start > 2) pages.push('...');
+            for (let i = start; i <= end; i++) pages.push(i);
+            if (end < totalPaginas - 1) pages.push('...');
+            if (end < totalPaginas) pages.push(totalPaginas);
+            return pages.map((p, i) =>
+              p === '...' ? (
+                <span key={`ellipsis-${i}`} className={`px-2 text-xs ${mutedText}`}>...</span>
+              ) : (
+                <button
+                  key={p}
+                  onClick={() => setPaginaAtual(p)}
+                  className={`px-3 py-1.5 rounded text-xs font-bold cursor-pointer transition-all ${
+                    p === paginaAtualSegura
+                      ? 'bg-[var(--cor-primaria)] text-white'
+                      : `${cardBg} ${textColor} border ${borderColor} hover:bg-[var(--cor-primaria)] hover:text-white`
+                  }`}
+                >
+                  {p}
+                </button>
+              )
+            );
+          })()}
+          <button
+            onClick={() => setPaginaAtual(p => Math.min(totalPaginas, p + 1))}
+            disabled={paginaAtualSegura >= totalPaginas}
+            className={`px-3 py-1.5 rounded text-xs font-bold cursor-pointer transition-all ${paginaAtualSegura >= totalPaginas ? 'opacity-30 cursor-not-allowed' : 'hover:bg-[var(--cor-primaria)] hover:text-white'} ${cardBg} ${textColor} border ${borderColor}`}
+          >
+            Próximo »
+          </button>
+          <span className={`text-xs ${mutedText} ml-2`}>
+            Página {paginaAtualSegura} de {totalPaginas} ({profissionaisFiltrados.length} registros)
+          </span>
+        </div>
+      )}
 
       <div className={`mt-auto ${bgColor} border-t-2 border-[var(--cor-primaria)] px-3 md:px-5 py-4 text-center text-[11px] md:text-xs ${textColor}`}>
         <p className="my-0.5">Desenvolvido por Cristian Marques</p>
@@ -547,25 +622,33 @@ export default function Dashboard({ onNavigate }) {
       <Suspense fallback={null}>
         <PrintFicha profissionais={profissionaisFiltrados} unidade={unidadeSelecionada} dataEmissao={dataEmissao} getCboDesc={getCboDesc} />
       </Suspense>
-      <Suspense fallback={null}>
-        <MultiLotacaoModal
-          isOpen={multiLotacaoModalOpen}
-          onClose={() => setMultiLotacaoModalOpen(false)}
-          multiLotacaoData={multiLotacaoData}
-          unidades={unidades}
-          profissionais={profissionais}
-          onComplete={() => refreshData()}
-        />
-      </Suspense>
-      <Suspense fallback={null}>
-        <DuplicadosModal
-          isOpen={duplicadosModalOpen}
-          onClose={() => setDuplicadosModalOpen(false)}
-          duplicadosData={duplicadosData}
-          unidades={unidades}
-          onComplete={() => refreshData()}
-        />
-      </Suspense>
+        <Suspense fallback={null}>
+          <MultiLotacaoModal
+            isOpen={multiLotacaoModalOpen}
+            onClose={() => setMultiLotacaoModalOpen(false)}
+            multiLotacaoData={multiLotacaoData}
+            unidades={unidades}
+            profissionais={profissionais}
+            onComplete={() => refreshData()}
+          />
+        </Suspense>
+        <Suspense fallback={null}>
+          <DuplicadosModal
+            isOpen={duplicadosModalOpen}
+            onClose={() => setDuplicadosModalOpen(false)}
+            duplicadosData={duplicadosData}
+            unidades={unidades}
+            onComplete={() => refreshData()}
+          />
+        </Suspense>
+        <Suspense fallback={null}>
+          <UnidadesSemCadastroModal
+            isOpen={unidadesSemCadastroModalOpen}
+            onClose={() => setUnidadesSemCadastroModalOpen(false)}
+            unidades={unidadesSemCadastro}
+            todasUnidades={unidades}
+          />
+        </Suspense>
     </div>
   );
 }
