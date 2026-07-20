@@ -15,6 +15,7 @@ const opcoesVinculo = [
 const CAMPOS = [
   { key: 'nome_profissional', label: 'Nome Completo' },
   { key: 'cpf', label: 'CPF' },
+  { key: 'cns', label: 'CNS (15 dígitos)' },
   { key: 'cnes', label: 'CNES', type: 'select', optionsKey: 'cnes' },
   { key: 'cbo', label: 'CBO', type: 'select', optionsKey: 'cbo' },
   { key: 'conselho', label: 'Conselho' },

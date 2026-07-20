@@ -11,6 +11,7 @@ function descCbo(codigo) {
 const COLUNAS = [
   { key: 'nome_profissional', label: 'Nome', width: 'w-[180px]' },
   { key: 'cpf', label: 'CPF', width: 'w-[120px]' },
+  { key: 'cns', label: 'CNS', width: 'w-[140px]' },
   { key: 'cbo', label: 'CBO', width: 'w-[160px]' },
   { key: 'conselho', label: 'Cons.', width: 'w-[70px]' },
   { key: 'registro', label: 'Reg.', width: 'w-[90px]' },

@@ -40,6 +40,7 @@ export default function ProfessionalsTable({
               <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
                 <div><span className="text-gray-500">Nome:</span> <span className="font-bold">{p.nome_profissional || '—'}</span></div>
                 <div><span className="text-gray-500">CPF:</span> <span className="font-bold">{p.cpf || '—'}</span></div>
+                <div><span className="text-gray-500">CNS:</span> <span className="font-bold">{p.cns || '—'}</span></div>
                 <div><span className="text-gray-500">CNES:</span> <span className="font-bold">{p.cnes || '—'}</span></div>
                 <div><span className="text-gray-500">CBO:</span> <span className="font-bold">{getCboDesc(p.cbo)}</span></div>
                 <div><span className="text-gray-500">Conselho:</span> <span className="font-bold">{p.conselho || '—'}</span></div>
@@ -63,6 +64,7 @@ export default function ProfessionalsTable({
             <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">Unidade</th>
             <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">Nome</th>
             <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">CPF</th>
+            <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">CNS</th>
             <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">CBO</th>
             <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">Conselho</th>
             <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">Registro</th>
@@ -76,7 +78,7 @@ export default function ProfessionalsTable({
         <tbody>
           {profissionaisFiltrados.length === 0 ? (
             <tr>
-              <td colSpan={13} className="text-center py-8 text-gray-500">
+              <td colSpan={14} className="text-center py-8 text-gray-500">
                 <div className="text-4xl opacity-30 mb-2">👻</div>
                 Nenhum profissional encontrado.
               </td>
@@ -102,6 +104,7 @@ export default function ProfessionalsTable({
                 <td className="border border-gray-400 px-2 py-1.5 text-center text-[clamp(11px,1.6vw,13px)] font-bold">{p.cnes || ''}</td>
                 <td className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)] font-bold">{p.nome_profissional || ''}</td>
                 <td className="border border-gray-400 px-2 py-1.5 text-center text-[clamp(11px,1.6vw,13px)] font-bold">{p.cpf || ''}</td>
+                <td className="border border-gray-400 px-2 py-1.5 text-center text-[clamp(11px,1.6vw,13px)] font-bold">{p.cns || ''}</td>
                 <td className="border border-gray-400 px-2 py-1.5 text-center text-[clamp(11px,1.6vw,13px)] font-bold">{getCboDesc(p.cbo)}</td>
                 <td className="border border-gray-400 px-2 py-1.5 text-center text-[clamp(11px,1.6vw,13px)] font-bold">{p.conselho || ''}</td>
                 <td className="border border-gray-400 px-2 py-1.5 text-center text-[clamp(11px,1.6vw,13px)] font-bold">{p.registro || ''}</td>

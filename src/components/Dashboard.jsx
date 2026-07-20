@@ -7,13 +7,15 @@ import LoadingSkeleton from './Skeleton';
 import KPICards from './KPICards';
 import ProfessionalsTable from './ProfessionalsTable';
 import TodayKPIs from './TodayKPIs';
-import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3, UserCircle, Sun, Moon, Shield, History, Bell } from 'lucide-react';
+import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3, UserCircle, Sun, Moon, Shield, History, Bell, Eye, Trash2, Fingerprint } from 'lucide-react';
 
 const ChartsGrid = lazy(() => import('./ChartsGrid'));
 const ApprovalModal = lazy(() => import('./ApprovalModal'));
 const KpiDetailModal = lazy(() => import('./KpiDetailModal'));
 const ReportsModal = lazy(() => import('./ReportsModal'));
 const PrintFicha = lazy(() => import('./PrintFicha'));
+const MultiLotacaoModal = lazy(() => import('./MultiLotacaoModal'));
+const DuplicadosModal = lazy(() => import('./DuplicadosModal'));
 
 export default function Dashboard({ onNavigate }) {
   const { unidades, profissionais, solicitacoes, loading, recarregar } = useData();
@@ -23,9 +25,12 @@ export default function Dashboard({ onNavigate }) {
   const [buscaGlobal, setBuscaGlobal] = useState('');
   const [filtroEspecialidade, setFiltroEspecialidade] = useState('todos');
   const [filtroControle, setFiltroControle] = useState('todos');
+  const [tipoBusca, setTipoBusca] = useState('geral'); // 'geral' | 'cpf' | 'cns'
   const [solicitacaoModal, setSolicitacaoModal] = useState(null);
   const [kpiModal, setKpiModal] = useState(null);
   const [relatoriosModal, setRelatoriosModal] = useState(false);
+  const [multiLotacaoModalOpen, setMultiLotacaoModalOpen] = useState(false);
+  const [duplicadosModalOpen, setDuplicadosModalOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('cnesDark') === 'true');
   const [notificacao, setNotificacao] = useState(null);
   const [periodoFiltro, setPeriodoFiltro] = useState('12');
@@ -74,21 +79,35 @@ export default function Dashboard({ onNavigate }) {
   const roleColors = { admin: 'bg-purple-100 text-purple-700 border-purple-300', editor: 'bg-blue-100 text-blue-700 border-blue-300', viewer: 'bg-gray-100 text-gray-600 border-gray-300' };
   const roleColor = roleColors[profile?.role] || roleColors.viewer;
 
+  // Strip mask from CPF: remove dots, dashes, spaces
+  const limparCPF = (valor) => (valor || '').replace(/[.\-\s]/g, '');
+
   // Filter profissionais by date range
   const profissionaisFiltrados = useMemo(() => {
     let lista = [...profissionais];
     if (unidadeFiltro !== '__todos__') lista = lista.filter(p => p.cnes === unidadeFiltro);
     if (buscaGlobal.trim()) {
       const q = buscaGlobal.toLowerCase().trim();
-      lista = lista.filter(p =>
-        (p.nome_profissional?.toLowerCase().includes(q)) ||
-        (p.cpf?.includes(q)) ||
-        (p.cbo && listaCBO.some(c => c.codigo === p.cbo && c.descricao.toLowerCase().includes(q))) ||
-        (p.conselho?.toLowerCase().includes(q)) ||
-        (p.cargo_funcao?.toLowerCase().includes(q)) ||
-        (p.tipo_vinculo?.toLowerCase().includes(q)) ||
-        (p.setor_equipe?.toLowerCase().includes(q))
-      );
+      const qLimpo = limparCPF(q);
+      lista = lista.filter(p => {
+        if (tipoBusca === 'cpf') {
+          return limparCPF(p.cpf).includes(qLimpo);
+        }
+        if (tipoBusca === 'cns') {
+          return (p.cns || '').includes(q);
+        }
+        // Search all fields (geral)
+        return (
+          (p.nome_profissional?.toLowerCase().includes(q)) ||
+          limparCPF(p.cpf).includes(qLimpo) ||
+          (p.cns || '').includes(q) ||
+          (p.cbo && listaCBO.some(c => c.codigo === p.cbo && c.descricao.toLowerCase().includes(q))) ||
+          (p.conselho?.toLowerCase().includes(q)) ||
+          (p.cargo_funcao?.toLowerCase().includes(q)) ||
+          (p.tipo_vinculo?.toLowerCase().includes(q)) ||
+          (p.setor_equipe?.toLowerCase().includes(q))
+        );
+      });
     }
     if (filtroEspecialidade === 'medico') lista = lista.filter(p => p.cbo?.startsWith('2231'));
     else if (filtroEspecialidade === 'enfermeiro') lista = lista.filter(p => p.cbo?.startsWith('2235'));
@@ -194,8 +213,8 @@ export default function Dashboard({ onNavigate }) {
   };
 
   const exportarCSV = () => {
-    const headers = ['Nome', 'CPF', 'CBO', 'Conselho', 'Registro', 'UF', 'Cargo', 'Vínculo', 'C.H.', 'Setor', 'Unidade'];
-    const rows = profissionaisFiltrados.map(p => [p.nome_profissional, p.cpf, p.cbo, p.conselho, p.registro, p.uf_conselho, p.cargo_funcao, p.tipo_vinculo, p.carga_horaria, p.setor_equipe, unidades.find(u => u.cnes === p.cnes)?.nome_unidade || p.cnes].map(v => `"${v || ''}"`).join(','));
+    const headers = ['Nome', 'CPF', 'CNS', 'CBO', 'Conselho', 'Registro', 'UF', 'Cargo', 'Vínculo', 'C.H.', 'Setor', 'Unidade'];
+    const rows = profissionaisFiltrados.map(p => [p.nome_profissional, p.cpf, p.cns, p.cbo, p.conselho, p.registro, p.uf_conselho, p.cargo_funcao, p.tipo_vinculo, p.carga_horaria, p.setor_equipe, unidades.find(u => u.cnes === p.cnes)?.nome_unidade || p.cnes].map(v => `"${v || ''}"`).join(','));
     const blob = new Blob([headers.join(',') + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'profissionais.csv'; link.click();
   };
@@ -254,6 +273,38 @@ export default function Dashboard({ onNavigate }) {
     const count = {};
     profissionais.forEach(p => { if (p.cpf) { if (!count[p.cpf]) count[p.cpf] = { nome: p.nome_profissional, unidades: new Set() }; count[p.cpf].unidades.add(p.cnes); } });
     return Object.values(count).filter(v => v.unidades.size > 1).sort((a, b) => b.unidades.size - a.unidades.size).slice(0, 15);
+  }, [profissionais]);
+
+  const multiLotacaoData = useMemo(() => {
+    const cpfMap = {};
+    profissionais.forEach(p => {
+      if (p.cpf) {
+        if (!cpfMap[p.cpf]) cpfMap[p.cpf] = [];
+        cpfMap[p.cpf].push(p);
+      }
+    });
+    return Object.values(cpfMap)
+      .filter(group => { const unidades = new Set(group.map(p => p.cnes)); return unidades.size > 1; })
+      .map(group => ({
+        nome: group[0].nome_profissional,
+        cpf: group[0].cpf,
+        profissionais: group,
+        unidades: [...new Set(group.map(p => p.cnes))]
+      }));
+  }, [profissionais]);
+
+  const duplicadosData = useMemo(() => {
+    const cpfMap = {};
+    profissionais.forEach(p => {
+      if (p.cpf) {
+        if (!cpfMap[p.cpf]) cpfMap[p.cpf] = [];
+        cpfMap[p.cpf].push(p);
+      }
+    });
+    return Object.values(cpfMap).filter(group => group.length > 1).map(group => ({
+      cpf: group[0].cpf,
+      profissionais: group
+    }));
   }, [profissionais]);
 
   const getCboDesc = (codigo) => listaCBO.find(c => c.codigo === codigo)?.descricao || codigo || '';
@@ -340,8 +391,18 @@ export default function Dashboard({ onNavigate }) {
         </div>
 
         {multiLotacao.length > 0 && (
-          <div className={`${cardBg} rounded-md p-2.5 border ${borderColor} mb-2 max-h-[160px] overflow-y-auto`}>
-            <h5 className={`text-xs font-bold mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}><Users size={12} className="inline mr-1" /> Profissionais com múltiplas lotações</h5>
+          <div className={`${cardBg} rounded-md p-2.5 border ${borderColor} mb-2 max-h-[200px] overflow-y-auto`}>
+            <div className="flex items-center justify-between mb-1">
+              <h5 className={`text-xs font-bold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}><Users size={12} className="inline mr-1" /> Profissionais com múltiplas lotações</h5>
+              <button
+                onClick={() => setMultiLotacaoModalOpen(true)}
+                className="inline-flex items-center gap-1 bg-[var(--cor-primaria)] hover:bg-[var(--cor-primaria-hover)] text-white px-2.5 py-1 rounded text-[10px] font-bold transition-all cursor-pointer hover:scale-105 shadow-sm"
+                title="Ver detalhes e gerenciar vínculos"
+              >
+                <Eye size={11} />
+                Ver Detalhes
+              </button>
+            </div>
             <ul className="space-y-0.5">{multiLotacao.map((p, i) => (
               <li key={i} className={`flex justify-between text-xs py-0.5 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                 <span className={textColor}>{p.nome}</span>
@@ -354,7 +415,19 @@ export default function Dashboard({ onNavigate }) {
         <div className={`${cardBg} rounded-md p-2.5 border ${borderColor} mb-2`}>
           <h5 className={`text-xs font-bold mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}><AlertTriangle size={12} className="inline mr-1" /> Alertas</h5>
           {alertas.length === 0 ? <div className={mutedText + ' text-xs'}>Nenhum alerta.</div> : alertas.map((a, i) => (
-            <div key={i} className={`text-xs py-1 px-2 mb-0.5 border-l-4 flex items-center gap-2 ${a.type === 'critical' ? 'border-l-red-500 bg-red-50' : 'border-l-yellow-400 bg-yellow-50'}`}><span>{a.msg}</span></div>
+            <div key={i} className={`text-xs py-1 px-2 mb-0.5 border-l-4 flex items-center justify-between gap-2 ${a.type === 'critical' ? 'border-l-red-500 bg-red-50' : 'border-l-yellow-400 bg-yellow-50'}`}>
+              <span>{a.msg}</span>
+              {a.msg?.includes('CPF duplicado') && (
+                <button
+                  onClick={() => setDuplicadosModalOpen(true)}
+                  className="inline-flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer hover:scale-105 shrink-0 shadow-sm"
+                  title="Gerenciar vínculos duplicados"
+                >
+                  <Trash2 size={10} />
+                  Gerenciar
+                </button>
+              )}
+            </div>
           ))}
         </div>
 
@@ -393,7 +466,18 @@ export default function Dashboard({ onNavigate }) {
 
       {/* Global Search */}
       <div className={`flex flex-wrap items-center gap-2 px-3 md:px-4 py-2.5 ${bgColor} border-b ${borderColor}`}>
-        <input type="text" value={buscaGlobal} onChange={e => setBuscaGlobal(e.target.value)} placeholder="🔍 Buscar por nome, CPF, CBO, cargo, vínculo, setor..." className={`flex-1 min-w-[180px] md:min-w-[200px] px-2 md:px-3 py-2 border ${borderColor} rounded text-xs md:text-sm ${cardBg} ${textColor}`} />
+        <div className="flex items-center gap-1">
+          <Fingerprint size={14} className={`${mutedText}`} />
+          <select value={tipoBusca} onChange={e => setTipoBusca(e.target.value)} className={`px-2 py-2 border ${borderColor} rounded text-xs md:text-sm font-bold ${cardBg} ${textColor} cursor-pointer`}>
+            <option value="geral">Geral</option>
+            <option value="cpf">CPF</option>
+            <option value="cns">CNS</option>
+          </select>
+        </div>
+        <input type="text" value={buscaGlobal} onChange={e => setBuscaGlobal(e.target.value)}
+          placeholder={tipoBusca === 'cpf' ? '🔍 Buscar por CPF (11 dígitos)' : tipoBusca === 'cns' ? '🔍 Buscar por CNS (15 dígitos)' : '🔍 Buscar por nome, CPF, CNS, CBO...'}
+          maxLength={tipoBusca === 'cpf' ? 14 : tipoBusca === 'cns' ? 15 : undefined}
+          className={`flex-1 min-w-[180px] md:min-w-[200px] px-2 md:px-3 py-2 border ${borderColor} rounded text-xs md:text-sm ${cardBg} ${textColor}`} />
         <select value={filtroEspecialidade} onChange={e => setFiltroEspecialidade(e.target.value)} className={`min-w-[110px] md:min-w-[130px] px-2 py-2 border ${borderColor} rounded text-xs md:text-sm ${cardBg} ${textColor}`}>
           <option value="todos">Todos</option>
           <option value="medico">Médico</option><option value="enfermeiro">Enfermeiro</option><option value="dentista">Dentista</option>
@@ -441,6 +525,25 @@ export default function Dashboard({ onNavigate }) {
       </Suspense>
       <Suspense fallback={null}>
         <PrintFicha profissionais={profissionaisFiltrados} unidade={unidadeSelecionada} dataEmissao={dataEmissao} getCboDesc={getCboDesc} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <MultiLotacaoModal
+          isOpen={multiLotacaoModalOpen}
+          onClose={() => setMultiLotacaoModalOpen(false)}
+          multiLotacaoData={multiLotacaoData}
+          unidades={unidades}
+          profissionais={profissionais}
+          onComplete={() => recarregar()}
+        />
+      </Suspense>
+      <Suspense fallback={null}>
+        <DuplicadosModal
+          isOpen={duplicadosModalOpen}
+          onClose={() => setDuplicadosModalOpen(false)}
+          duplicadosData={duplicadosData}
+          unidades={unidades}
+          onComplete={() => recarregar()}
+        />
       </Suspense>
     </div>
   );
