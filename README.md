@@ -88,7 +88,8 @@
 - Filtro por especialidade: Médico (2231), Enfermeiro (2235), Dentista (2232)
 - Filtro por controle: Pendentes / Concluídos
 - Filtro por **período personalizado** (data início / data fim)
-- Paginação: **50 registros por página** com navegação inteligente
+- Paginação flexível: **25/50/100 registros por página** com navegação inteligente
+- Atalho de teclado: <kbd>Ctrl+K</kbd> para focar o campo de busca global instantaneamente
 
 ### ✅ Controle de Qualidade
 - **Checkbox individual** com estado otimista (marca na hora, salva em background)
@@ -150,7 +151,7 @@
 | [Lucide React](https://lucide.dev) | ^1.24.0 | Iconografia |
 | [Oxlint](https://oxc.rs) | ^1.71.0 | Linter (10-100x mais rápido que ESLint) |
 | [Vitest](https://vitest.dev) | ^3.1.3 | Test runner |
-| [Resend](https://resend.com) | — | Envio de e-mails transacionais |
+| [Brevo](https://brevo.com) | — | Envio de e-mails transacionais (300/dia grátis) |
 
 ---
 
@@ -177,8 +178,8 @@ monitoramento-cnes/
 │
 ├── supabase/
 │   ├── functions/
-│   │   └── enviar-email-relacionar/
-│   │       └── index.ts           # Edge Function — e-mail Resend
+│   │       └── enviar-email-relacionar/
+│       │       └── index.ts           # Edge Function — e-mail Brevo
 │   └── migrations/
 │       └── 003_add_email_responsavel.sql
 │
@@ -435,9 +436,9 @@ O sistema usa **Supabase Auth** com 3 perfis:
 
 A role é definida na tabela `profiles`. Por padrão, novos usuários são criados como `viewer`.
 
-### Edge Function — E-mail Resend
+### Edge Function — E-mail (Brevo)
 
-A função `enviar-email-relacionar` notifica gestores de unidades sem cadastro de profissionais.
+A função `enviar-email-relacionar` notifica gestores de unidades sem cadastro de profissionais via [Brevo](https://brevo.com) (antigo Sendinblue — 300 e-mails/dia grátis).
 
 #### Configuração
 
@@ -449,19 +450,16 @@ npm install -g supabase
 supabase login
 supabase link --project-ref cptkatdswfyycsgedcte
 
-# 3. Configure as secrets
-supabase secrets set RESEND_API_KEY=re_XXXXXXXXXXXXX
-supabase secrets set RESEND_FROM_EMAIL=nao-responder@seudominio.com.br
-supabase secrets set RESEND_FROM_NAME="SEMUSA - Divisão de Controle e Avaliacão do SUS"
+# 3. Configure as secrets (Brevo)
+supabase secrets set BREVO_API_KEY=xkeysib-xxxxxxxxxxxx
+supabase secrets set BREVO_FROM_EMAIL=cristianmarques.devx@gmail.com
+supabase secrets set BREVO_FROM_NAME="SEMUSA - Divisão de Controle e Avaliação do SUS"
 
 # 4. Faça deploy
 supabase functions deploy enviar-email-relacionar --no-verify-jwt
 ```
 
 > 🔐 **Configure a chave manualmente** no [Dashboard de Secrets](https://supabase.com/dashboard/project/cptkatdswfyycsgedcte/settings/secrets) — nunca coloque a chave real no código-fonte.
-
-> Ou configure as secrets diretamente pelo Dashboard do Supabase:  
-> [https://supabase.com/dashboard/project/cptkatdswfyycsgedcte/settings/secrets](https://supabase.com/dashboard/project/cptkatdswfyycsgedcte/settings/secrets)
 
 #### Uso
 
@@ -470,6 +468,8 @@ O modal **"Unidades sem Cadastro"** no Dashboard permite:
 - Cadastrar/editar e-mail do responsável
 - Enviar e-mail individual ou em massa
 - Copiar lista de unidades para área de transferência
+
+> ⚡ **Envio em massa otimizado**: a Edge Function processa todos os destinatários em **paralelo** via `Promise.allSettled` — uma única chamada de API substitui N chamadas sequenciais. Para 50 unidades, o tempo cai de ~25s para ~2s.
 
 ---
 

@@ -72,31 +72,40 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
     if (!await toast.confirm(`Enviar e-mail para ${comEmail.length} unidade(s)?`)) return;
 
     setEnviando(true);
-    let enviados = 0;
-    let erros = 0;
 
-    for (const unidade of comEmail) {
-      try {
-        const { error } = await supabase.functions.invoke('enviar-email-relacionar', {
-          body: {
-            destinatario: unidade.email_responsavel,
-            cnes: unidade.cnes,
-            nome_unidade: unidade.nome_unidade,
-            responsavel: unidade.responsavel || 'Gestor(a)',
-            tipo: 'individual'
-          }
-        });
-        if (error) throw error;
-        enviados++;
-      } catch (e) {
-        if (!e.message?.includes('not found')) erros++;
+    try {
+      // ➡️ 1 chamada única para a Edge Function com todos os destinatários
+      const { data, error } = await supabase.functions.invoke('enviar-email-relacionar', {
+        body: {
+          tipo: 'massivo',
+          destinatarios: comEmail.map(u => ({
+            destinatario: u.email_responsavel,
+            cnes: u.cnes,
+            nome_unidade: u.nome_unidade,
+            responsavel: u.responsavel || 'Gestor(a)',
+          }))
+        }
+      });
+
+      if (error) throw error;
+
+      const { enviados, erros, total, detalhes } = data;
+      setResultado({ enviados, erros, total });
+
+      if (erros === 0) {
+        toast.success(`${enviados} e-mail(s) enviado(s) com sucesso!`);
+      } else {
+        toast.success(`${enviados} de ${total} enviado(s).`);
+        const falhas = detalhes.filter(d => !d.success);
+        // Agrupa todos os erros em um único toast
+        const resumoErros = falhas.map(f => `• ${f.nome_unidade}: ${f.error}`).join('\n');
+        toast.warning(`${erros} falha(s):\n${resumoErros}`);
       }
+    } catch (e) {
+      toast.error('Erro no envio em massa: ' + (e.message || 'Erro desconhecido'));
+    } finally {
+      setEnviando(false);
     }
-
-    setEnviando(false);
-    setResultado({ enviados, erros, total: comEmail.length });
-    toast.success(`${enviados} e-mail(s) enviado(s) com sucesso!`);
-    if (erros > 0) toast.warning(`${erros} falha(s) no envio.`);
   };
 
   const copiarLista = async () => {

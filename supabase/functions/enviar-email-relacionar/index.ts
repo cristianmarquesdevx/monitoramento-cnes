@@ -1,30 +1,48 @@
 // Supabase Edge Function — Envio de e-mail para gestores de unidades sem cadastro
-// 
+//
+// Modos de uso:
+//   Individual: { destinatario, cnes, nome_unidade, responsavel, tipo: "individual" }
+//   Massivo:    { destinatarios: [{ destinatario, cnes, nome_unidade, responsavel }], tipo: "massivo" }
+//
 // Configuração necessária:
-// 1. Crie uma conta em https://resend.com (grátis — 100 e-mails/dia)
-// 2. Obtenha sua API Key em resend.com/api-keys
+// 1. Crie uma conta em https://brevo.com (grátis — 300 e-mails/dia)
+// 2. Obtenha sua API Key em https://app.brevo.com/settings/keys/api
 // 3. Defina as variáveis de ambiente no Supabase:
-//    supabase secrets set RESEND_API_KEY=re_XXXXXXXXXXXXX
-//    supabase secrets set RESEND_FROM_EMAIL=nao-responder@seudominio.com.br
-//    supabase secrets set RESEND_FROM_NAME="SEMUSA - Divisão de Controle e Avaliação do SUS"
+//    supabase secrets set BREVO_API_KEY=xxxxx
+//    supabase secrets set BREVO_FROM_EMAIL=cristianmarques.devx@gmail.com
+//    supabase secrets set BREVO_FROM_NAME="SEMUSA - Divisão de Controle e Avaliação do SUS"
 // 4. Faça deploy:
 //    supabase functions deploy enviar-email-relacionar --no-verify-jwt
-//
-// Para testar localmente:
-//    supabase functions serve enviar-email-relacionar --env-file .env.local
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || ''
-const FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'nao-responder@semusa.portovelho.ro.gov.br'
-const FROM_NAME = Deno.env.get('RESEND_FROM_NAME') || 'SEMUSA - Divisão de Controle e Avaliação do SUS'
+const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY') || ''
+const FROM_EMAIL = Deno.env.get('BREVO_FROM_EMAIL') || 'cristianmarques.devx@gmail.com'
+const FROM_NAME = Deno.env.get('BREVO_FROM_NAME') || 'SEMUSA - Divisão de Controle e Avaliação do SUS'
 
-interface EmailPayload {
+interface Destinatario {
   destinatario: string
   cnes: string
   nome_unidade: string
   responsavel: string
+}
+
+interface EmailPayload {
   tipo: 'individual' | 'massivo'
+  destinatario?: string
+  cnes?: string
+  nome_unidade?: string
+  responsavel?: string
+  destinatarios?: Destinatario[]
+}
+
+interface ResultadoEnvio {
+  destinatario: string
+  cnes: string
+  nome_unidade: string
+  success: boolean
+  message_id?: string
+  error?: string
 }
 
 const corsHeaders = {
@@ -32,39 +50,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
-  try {
-    // Verificar se a chave Resend está configurada
-    if (!RESEND_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: 'RESEND_API_KEY não configurada. Execute: supabase secrets set RESEND_API_KEY=re_...' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const payload: EmailPayload = await req.json()
-    const { destinatario, cnes, nome_unidade, responsavel, tipo } = payload
-
-    if (!destinatario || !destinatario.includes('@')) {
-      return new Response(
-        JSON.stringify({ error: 'E-mail do destinatário inválido.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const dataAtual = new Date().toLocaleDateString('pt-BR', {
-      timeZone: 'America/Porto_Velho',
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    })
-
-    const htmlContent = `
+function buildHtml(responsavel: string, cnes: string, nome_unidade: string, dataAtual: string): string {
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -118,7 +105,7 @@ serve(async (req) => {
       </p>
 
       <p style="text-align: center;">
-        <a href="https://monitoramento-cnes.vercel.app" class="button">
+        <a href="https://atualizacaoprofissionais-cnes.vercel.app" class="button">
           Acessar Sistema CNES
         </a>
       </p>
@@ -144,37 +131,126 @@ serve(async (req) => {
   </div>
 </body>
 </html>`
+}
 
-    console.log(`Enviando e-mail para ${destinatario} — ${cnes} — ${nome_unidade}`)
+async function enviarEmailParaUm(dest: Destinatario, dataAtual: string): Promise<ResultadoEnvio> {
+  try {
+    const html = buildHtml(dest.responsavel, dest.cnes, dest.nome_unidade, dataAtual)
 
-    const res = await fetch('https://api.resend.com/emails', {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'api-key': BREVO_API_KEY,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify({
-        from: `${FROM_NAME} <${FROM_EMAIL}>`,
-        to: [destinatario],
-        subject: `[SEMUSA] Cadastro CNES — Unidade ${nome_unidade} sem profissionais cadastrados`,
-        html: htmlContent,
+        sender: { name: FROM_NAME, email: FROM_EMAIL },
+        to: [{ email: dest.destinatario, name: dest.responsavel || 'Gestor(a)' }],
+        subject: `[SEMUSA] Cadastro CNES — Unidade ${dest.nome_unidade} sem profissionais cadastrados`,
+        htmlContent: html,
       }),
     })
 
     const data = await res.json()
 
     if (!res.ok) {
-      console.error('Erro Resend:', data)
+      console.error(`Erro Brevo para ${dest.destinatario}:`, data)
+      return { ...dest, success: false, error: data.message || 'Erro desconhecido' }
+    }
+
+    return { ...dest, success: true, message_id: data.messageId }
+  } catch (e) {
+    console.error(`Erro na requisição para ${dest.destinatario}:`, e.message)
+    return { ...dest, success: false, error: e.message }
+  }
+}
+
+serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    if (!BREVO_API_KEY) {
       return new Response(
-        JSON.stringify({ error: 'Falha ao enviar e-mail', details: data }),
+        JSON.stringify({ error: 'BREVO_API_KEY não configurada.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log('E-mail enviado com sucesso:', data.id)
+    const payload: EmailPayload = await req.json()
+
+    if (payload.tipo === 'massivo' && payload.destinatarios) {
+      // === MODO MASSIVO ===
+      if (payload.destinatarios.length === 0) {
+        return new Response(
+          JSON.stringify({ error: 'Nenhum destinatário informado.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const dataAtual = new Date().toLocaleDateString('pt-BR', {
+        timeZone: 'America/Porto_Velho',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      })
+
+      console.log(`Enviando lote massivo com ${payload.destinatarios.length} destinatário(s)`)
+
+      // Processa todos em paralelo
+      const resultados = await Promise.allSettled(
+        payload.destinatarios.map(dest => enviarEmailParaUm(dest, dataAtual))
+      )
+
+      const detalhes: ResultadoEnvio[] = resultados.map(r =>
+        r.status === 'fulfilled' ? r.value : { destinatario: 'erro', cnes: '', nome_unidade: '', success: false, error: r.reason?.message || 'Falha interna' }
+      )
+
+      const enviados = detalhes.filter(d => d.success).length
+      const erros = detalhes.filter(d => !d.success).length
+
+      console.log(`Lote massivo concluído: ${enviados} enviados, ${erros} erros`)
+
+      return new Response(
+        JSON.stringify({ success: true, enviados, erros, total: payload.destinatarios.length, detalhes }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // === MODO INDIVIDUAL ===
+    const { destinatario, cnes, nome_unidade, responsavel } = payload
+
+    if (!destinatario || !destinatario.includes('@')) {
+      return new Response(
+        JSON.stringify({ error: 'E-mail do destinatário inválido.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const dataAtual = new Date().toLocaleDateString('pt-BR', {
+      timeZone: 'America/Porto_Velho',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    })
+
+    const resultado = await enviarEmailParaUm(
+      { destinatario, cnes: cnes || '', nome_unidade: nome_unidade || '', responsavel: responsavel || 'Gestor(a)' },
+      dataAtual
+    )
+
+    if (!resultado.success) {
+      return new Response(
+        JSON.stringify({ error: 'Falha ao enviar e-mail', details: resultado.error }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     return new Response(
-      JSON.stringify({ success: true, message_id: data.id, destinatario, cnes, nome_unidade }),
+      JSON.stringify({ success: true, message_id: resultado.message_id, destinatario, cnes, nome_unidade }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (e) {

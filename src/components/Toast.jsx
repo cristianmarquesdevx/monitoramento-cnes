@@ -48,7 +48,7 @@ export function ToastProvider({ children }) {
             className={`pointer-events-auto px-4 py-3.5 rounded-lg text-white font-medium shadow-lg flex items-center gap-3 cursor-pointer transition-all duration-300 ${t.color} ${t.removendo ? 'opacity-0 translate-x-full' : 'animate-[toastSlideIn_0.35s_ease-out]'}`}
             onClick={() => removeToast(t.id)}>
             {t.icon}
-            <span className="flex-1">{t.msg}</span>
+            <span className="flex-1 whitespace-pre-line">{t.msg}</span>
           </div>
         ))}
       </div>
