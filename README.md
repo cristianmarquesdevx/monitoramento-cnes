@@ -450,13 +450,16 @@ supabase login
 supabase link --project-ref cptkatdswfyycsgedcte
 
 # 3. Configure as secrets
-supabase secrets set RESEND_API_KEY=re_XXXXXXXXXXXXX
+supabase secrets set RESEND_API_KEY=re_8jeuTw8R_FhkiSh82eBgC3dysLx6U6DAs
 supabase secrets set RESEND_FROM_EMAIL=nao-responder@seudominio.com.br
-supabase secrets set RESEND_FROM_NAME="SEMUSA - Divisão de Controle e Avaliação do SUS"
+supabase secrets set RESEND_FROM_NAME="SEMUSA - Divisão de Controle e Avaliacão do SUS"
 
 # 4. Faça deploy
 supabase functions deploy enviar-email-relacionar --no-verify-jwt
 ```
+
+> ⚠️ **Chave fornecida:** `re_8jeuTw8R_FhkiSh82eBgC3dysLx6U6DAs`  
+> Caso o CLI não funcione, acesse o [Dashboard de Secrets](https://supabase.com/dashboard/project/cptkatdswfyycsgedcte/settings/secrets) e crie a secret `RESEND_API_KEY` com este valor manualmente.
 
 > Ou configure as secrets diretamente pelo Dashboard do Supabase:  
 > [https://supabase.com/dashboard/project/cptkatdswfyycsgedcte/settings/secrets](https://supabase.com/dashboard/project/cptkatdswfyycsgedcte/settings/secrets)
