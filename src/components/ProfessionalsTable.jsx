@@ -38,9 +38,9 @@ function ProfessionalsTable({
                 </div>
                 <input type="checkbox" checked={!!p.controle_feito}
                   onChange={e => onMarcarConcluido(p.id, e.target.checked)}
-                  className="w-5 h-5 cursor-pointer" title={p.controle_feito ? 'Concluído' : 'Marcar como concluído'} />
+                  className="w-6 h-6 cursor-pointer min-w-[24px]" title={p.controle_feito ? 'Concluído' : 'Marcar como concluído'} />
               </div>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
                 <div><span className="text-gray-500">Nome:</span> <span className="font-bold">{p.nome_profissional || '—'}</span></div>
                 <div><span className="text-gray-500">CPF:</span> <span className="font-bold">{p.cpf || '—'}</span></div>
                 <div><span className="text-gray-500">CNS:</span> <span className="font-bold">{p.cns || '—'}</span></div>

@@ -230,8 +230,62 @@ export default function AdminUsers({ onBack }) {
           </div>
         )}
 
-        {/* Tabela */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        {/* Mobile cards */}
+        <div className="block lg:hidden space-y-2">
+          {loading ? (
+            <div className="p-8 text-center text-gray-500">Carregando usuários...</div>
+          ) : filtrados.length === 0 ? (
+            <div className="p-8 text-center text-gray-500 bg-white rounded-lg border border-gray-200">
+              Nenhum usuário encontrado.
+            </div>
+          ) : filtrados.map(u => {
+            const roleConfig = ROLE_CONFIG[u.role] || ROLE_CONFIG.viewer;
+            const isCurrentUser = u.id === currentProfile?.id;
+            return (
+              <div key={u.id} className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
+                <div className="flex items-center gap-3 mb-2">
+                  <Avatar nome={u.nome} size={36} />
+                  <div className="flex-1 min-w-0">
+                    {editando === u.id ? (
+                      <input type="text" defaultValue={u.nome}
+                        onBlur={e => salvarNome(u.id, e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') salvarNome(u.id, e.target.value);
+                          if (e.key === 'Escape') setEditando(null);
+                        }}
+                        className="border border-gray-300 rounded px-2 py-1 text-sm w-full"
+                        autoFocus />
+                    ) : (
+                      <div className="font-bold text-sm cursor-pointer hover:text-[var(--cor-primaria)] truncate"
+                        onClick={() => setEditando(u.id)}
+                        title="Clique para editar o nome">
+                        {u.nome || '—'}
+                        {isCurrentUser && <span className="text-xs text-gray-400 ml-1 font-normal">(você)</span>}
+                      </div>
+                    )}
+                    <div className="text-xs text-gray-500 truncate">{u.email || '—'}</div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <select value={u.role}
+                    onChange={e => setConfirmando({ userId: u.id, novaRole: e.target.value, nome: u.nome })}
+                    className={`text-xs font-bold px-2 py-1 rounded-full border cursor-pointer ${roleConfig.color}`}>
+                    {Object.entries(ROLE_CONFIG).map(([key, config]) => (
+                      <option key={key} value={key}>{config.label}</option>
+                    ))}
+                  </select>
+                  <span className="text-[10px] text-gray-500">
+                    {u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—'}
+                    {u.last_sign_in_at && <span className="ml-1">· último {new Date(u.last_sign_in_at).toLocaleDateString('pt-BR')}</span>}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden lg:block bg-white rounded-lg border border-gray-200 overflow-hidden">
           {loading ? (
             <div className="p-8 text-center text-gray-500">Carregando usuários...</div>
           ) : (
@@ -242,13 +296,12 @@ export default function AdminUsers({ onBack }) {
                   <th className="px-4 py-3 text-left">Email</th>
                   <th className="px-4 py-3 text-left">Perfil</th>
                   <th className="px-4 py-3 text-left">Criado em</th>
-                  <th className="px-4 py-3 text-left hidden md:table-cell">Último acesso</th>
+                  <th className="px-4 py-3 text-left">Último acesso</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filtrados.map(u => {
                   const roleConfig = ROLE_CONFIG[u.role] || ROLE_CONFIG.viewer;
-                  const RoleIcon = roleConfig.icon;
                   const isCurrentUser = u.id === currentProfile?.id;
                   return (
                     <tr key={u.id} className="hover:bg-gray-50">
@@ -287,7 +340,7 @@ export default function AdminUsers({ onBack }) {
                       <td className="px-4 py-3 text-sm text-gray-500">
                         {u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—'}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500 hidden md:table-cell">
+                      <td className="px-4 py-3 text-sm text-gray-500">
                         {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString('pt-BR') : '—'}
                       </td>
                     </tr>

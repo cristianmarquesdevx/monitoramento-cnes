@@ -406,8 +406,98 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
         </div>
       )}
 
-      {/* Table */}
-      <div className="overflow-x-auto border border-gray-200 rounded-lg max-h-[450px] overflow-y-auto">
+      {/* Mobile cards */}
+      <div className="block md:hidden space-y-2 mb-4 max-h-[450px] overflow-y-auto">
+        {(!unidades || unidades.length === 0) ? (
+          <div className="text-center py-8 text-gray-400">
+            <AlertTriangle size={24} className="inline mb-1 text-green-500" />
+            <div className="font-semibold text-green-600">Todas as unidades possuem profissionais cadastrados!</div>
+            <div className="text-xs text-gray-500 mt-1">Nenhuma unidade órfã encontrada.</div>
+          </div>
+        ) : unidades.map((u, i) => (
+          <div key={u.cnes} className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-bold text-xs text-gray-400">#{i + 1}</span>
+              <button
+                onClick={() => handleEnviarEmail(u)}
+                disabled={enviando || !u.email_responsavel}
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold cursor-pointer transition-all ${
+                  u.email_responsavel
+                    ? 'bg-[var(--cor-primaria)] hover:bg-[var(--cor-primaria-hover)] text-white'
+                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <Mail size={10} />
+                Enviar
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs mb-2">
+              <div><span className="text-gray-500">CNES:</span> <span className="font-bold">{u.cnes}</span></div>
+              <div><span className="text-gray-500">Unidade:</span> <span className="font-bold">{u.nome_unidade}</span></div>
+              <div className="col-span-2"><span className="text-gray-500">Responsável:</span> <span className="font-bold">{u.responsavel || <span className="text-gray-400 italic">Não informado</span>}</span></div>
+            </div>
+            <div className="border-t border-gray-100 pt-2">
+              {editandoEmail === u.cnes ? (
+                <div className="flex items-center gap-1 flex-wrap">
+                  <input
+                    type="email"
+                    value={novoEmail}
+                    onChange={e => setNovoEmail(e.target.value)}
+                    placeholder="email@exemplo.com"
+                    className="flex-1 min-w-[120px] px-2 py-1.5 border border-gray-300 rounded text-xs"
+                    autoFocus
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleSalvarEmail(u.cnes);
+                      if (e.key === 'Escape') cancelarEdicao();
+                    }}
+                  />
+                  <button
+                    onClick={() => handleSalvarEmail(u.cnes)}
+                    className="bg-green-500 hover:bg-green-600 text-white px-2.5 py-1.5 rounded text-[10px] font-bold cursor-pointer transition-all"
+                  >
+                    OK
+                  </button>
+                  <button
+                    onClick={cancelarEdicao}
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-600 px-2 py-1.5 rounded text-[10px] font-bold cursor-pointer transition-all"
+                  >
+                    <X size={12} />
+                  </button>
+                  {u.email_responsavel && (
+                    <button
+                      onClick={() => handleLimparEmail(u.cnes)}
+                      className="bg-red-100 hover:bg-red-200 text-red-600 px-2 py-1.5 rounded text-[10px] font-bold cursor-pointer transition-all"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-gray-500">E-mail:</span>
+                  <span
+                    className={`flex-1 cursor-pointer text-xs truncate ${
+                      u.email_responsavel ? 'text-blue-600 underline hover:text-blue-800' : 'text-gray-400 italic hover:text-gray-600'
+                    }`}
+                    onClick={() => { setEditandoEmail(u.cnes); setNovoEmail(u.email_responsavel || ''); }}
+                  >
+                    {u.email_responsavel || 'Adicionar e-mail'}
+                  </span>
+                  <button
+                    onClick={() => { setEditandoEmail(u.cnes); setNovoEmail(u.email_responsavel || ''); }}
+                    className="text-gray-400 hover:text-[var(--cor-primaria)] p-1 rounded cursor-pointer"
+                  >
+                    <Pencil size={12} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-x-auto border border-gray-200 rounded-lg max-h-[450px] overflow-y-auto">
         <table className="w-full border-collapse text-sm">
           <thead className="sticky top-0 z-10">
             <tr className="bg-[var(--cor-primaria-claro)] text-center text-xs font-bold uppercase text-gray-700">
@@ -515,9 +605,6 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
           </tbody>
         </table>
       </div>
-
-
-
 
     </Modal>
   );
