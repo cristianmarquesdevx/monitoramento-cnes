@@ -4,6 +4,55 @@ import { supabase } from '../lib/supabase';
 import { useToast } from './Toast';
 import { Mail, Send, AlertTriangle, CheckCircle, Copy, Pencil, X, Trash2, ClipboardList, Check } from 'lucide-react';
 
+// ===== Validação de e-mail =====
+function validarEmail(email) {
+  if (!email || typeof email !== 'string') {
+    return { valido: false, motivo: 'E-mail vazio' };
+  }
+
+  const e = email.trim();
+
+  if (!e) return { valido: false, motivo: 'E-mail vazio' };
+  if (e.length > 254) return { valido: false, motivo: 'E-mail muito longo (máx. 254 caracteres)' };
+  if (e.includes(' ')) return { valido: false, motivo: 'E-mail não pode conter espaços' };
+
+  const partes = e.split('@');
+  if (partes.length !== 2) return { valido: false, motivo: 'E-mail deve ter exatamente um @' };
+
+  const [local, dominio] = partes;
+  if (!local || local.length > 64) return { valido: false, motivo: 'Parte local do e-mail inválida' };
+  if (!dominio || dominio.length < 3) return { valido: false, motivo: 'Domínio inválido (mín. 3 caracteres)' };
+
+  // Domínio deve ter pelo menos um ponto
+  if (!dominio.includes('.')) return { valido: false, motivo: 'Domínio deve ter um ponto (ex: gmail.com)' };
+
+  // TLD — última parte após o último ponto deve ter 2+ caracteres
+  const partesDominio = dominio.split('.');
+  const tld = partesDominio.pop();
+  if (!tld || tld.length < 2) return { valido: false, motivo: 'Domínio de topo inválido (ex: .com, .gov.br)' };
+
+  // Domínio não pode começar com ponto (ex: @.com.br)
+  if (dominio.startsWith('.')) return { valido: false, motivo: 'Domínio não pode começar com ponto' };
+
+  // Cada label do domínio deve ter ao menos 1 caractere
+  if (partesDominio.some(p => p.length === 0)) return { valido: false, motivo: 'Domínio tem labels vazias (ex: @.com)' };
+
+  // Caracteres válidos na parte local
+  if (!/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$/.test(local)) {
+    return { valido: false, motivo: 'Parte local contém caracteres inválidos' };
+  }
+
+  // Caracteres válidos no domínio
+  if (!/^[a-zA-Z0-9.-]+$/.test(dominio)) {
+    return { valido: false, motivo: 'Domínio contém caracteres inválidos' };
+  }
+
+  // Sem pontos consecutivos no domínio
+  if (dominio.includes('..')) return { valido: false, motivo: 'Domínio não pode ter pontos consecutivos' };
+
+  return { valido: true };
+}
+
 // ===== Múltiplos métodos de envio (fallback automático) =====
 const EMAIL_API = '/api/send-email';  // Python SMTP (Vercel)
 
@@ -50,14 +99,15 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
   const comProfissionais = totalUnidades - (unidades?.length || 0);
 
   const handleSalvarEmail = async (cnes) => {
-    if (!novoEmail || !novoEmail.includes('@')) {
-      toast.warning('Informe um e-mail válido.');
+    const validacao = validarEmail(novoEmail);
+    if (!validacao.valido) {
+      toast.warning('E-mail inválido: ' + validacao.motivo);
       return;
     }
     try {
       const { error } = await supabase
         .from('unidades_saude')
-        .update({ email_responsavel: novoEmail })
+        .update({ email_responsavel: novoEmail.trim() })
         .eq('cnes', cnes);
       if (error) throw error;
       toast.success('E-mail salvo com sucesso!');
@@ -117,7 +167,24 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
   };
 
   const handleEnviarTodos = async () => {
-    const comEmail = unidades.filter(u => u.email_responsavel);
+    // Consulta direto no Supabase para garantir dados frescos
+    // Após preenchimento em lote, o refreshData pode não ter capturado
+    // todos os e-mails que acabaram de ser salvos (consistência eventual)
+    let comEmail = unidades.filter(u => u.email_responsavel);
+
+    try {
+      // Busca TODAS as unidades com e-mail no banco (sem IN limit)
+      const { data: todasComEmail } = await supabase
+        .from('unidades_saude')
+        .select('cnes, nome_unidade, email_responsavel, responsavel')
+        .not('email_responsavel', 'is', null);
+      if (todasComEmail && todasComEmail.length > 0) {
+        // Filtra apenas as que estão na lista de unidades sem cadastro
+        const cnesSet = new Set(unidades.map(u => u.cnes));
+        comEmail = todasComEmail.filter(u => cnesSet.has(u.cnes));
+      }
+    } catch (_) { /* usa o fallback do prop unidades */ }
+
     if (comEmail.length === 0) {
       toast.warning('Nenhuma unidade com e-mail cadastrado.');
       return;
@@ -206,9 +273,10 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
         email = linha;
       }
 
-      if (!email.includes('@')) {
+      const validacao = validarEmail(email);
+      if (!validacao.valido) {
         erros++;
-        resultados.push({ linha: i + 1, cnes, nome: unidade.nome_unidade, success: false, error: 'E-mail inválido' });
+        resultados.push({ linha: i + 1, cnes, nome: unidade.nome_unidade, success: false, error: validacao.motivo });
         continue;
       }
 
@@ -238,6 +306,9 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
       toast.success(`${sucessos} de ${linhas.length} preenchido(s). ${erros} falha(s).`);
     }
 
+    // Notifica o Dashboard para recarregar
+    // O handleEnviarTodos consulta o banco diretamente, então não
+    // precisa se preocupar com race condition de refresh
     if (onEmailSaved) onEmailSaved();
   };
 

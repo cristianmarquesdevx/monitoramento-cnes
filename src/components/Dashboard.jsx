@@ -39,23 +39,29 @@ export default function Dashboard({ onNavigate }) {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState(50);
-  const [sortField, setSortField] = useState(null);
-  const [sortDir, setSortDir] = useState('asc');
+  const [sortFields, setSortFields] = useState([]);
 
-  const handleSort = useCallback((field) => {
+  const handleSort = useCallback((field, shiftKey = false) => {
     setPaginaAtual(1);
-    if (sortField === field) {
-      if (sortDir === 'asc') {
-        setSortDir('desc');
-      } else {
-        setSortField(null);
-        setSortDir('asc');
+    setSortFields(prev => {
+      const existing = prev.find(s => s.field === field);
+      if (existing) {
+        // Toggle direction or remove
+        if (existing.dir === 'asc') {
+          return prev.map(s => s.field === field ? { ...s, dir: 'desc' } : s);
+        } else {
+          return prev.filter(s => s.field !== field);
+        }
       }
-    } else {
-      setSortField(field);
-      setSortDir('asc');
-    }
-  }, [sortField, sortDir]);
+      if (shiftKey && prev.length > 0) {
+        // Shift+Click: add as secondary sort (max 3)
+        if (prev.length >= 3) return prev;
+        return [...prev, { field, dir: 'asc' }];
+      }
+      // Normal click: replace all
+      return [{ field, dir: 'asc' }];
+    });
+  }, []);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('cnesDark') === 'true');
   const [notificacao, setNotificacao] = useState(null);
   const [periodoFiltro, setPeriodoFiltro] = useState('12');
@@ -158,26 +164,34 @@ export default function Dashboard({ onNavigate }) {
     return lista;
   }, [profissionais, unidadeFiltro, buscaGlobal, filtroEspecialidade, filtroControle, filtroDataInicio, filtroDataFim]);
 
-  // Ordenação
+  // Ordenação multicoluna
+  const compareVal = (a, b, field, dir) => {
+    let valA = a[field];
+    let valB = b[field];
+    if (valA == null) valA = '';
+    if (valB == null) valB = '';
+    if (field === 'carga_horaria') {
+      valA = parseInt(valA) || 0;
+      valB = parseInt(valB) || 0;
+      return dir === 'asc' ? valA - valB : valB - valA;
+    }
+    valA = String(valA).toLowerCase();
+    valB = String(valB).toLowerCase();
+    return dir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+  };
+
   const profissionaisOrdenados = useMemo(() => {
-    if (!sortField) return profissionaisFiltrados;
+    if (sortFields.length === 0) return profissionaisFiltrados;
     const lista = [...profissionaisFiltrados];
     lista.sort((a, b) => {
-      let valA = a[sortField];
-      let valB = b[sortField];
-      if (valA == null) valA = '';
-      if (valB == null) valB = '';
-      if (sortField === 'carga_horaria') {
-        valA = parseInt(valA) || 0;
-        valB = parseInt(valB) || 0;
-        return sortDir === 'asc' ? valA - valB : valB - valA;
+      for (const s of sortFields) {
+        const result = compareVal(a, b, s.field, s.dir);
+        if (result !== 0) return result;
       }
-      valA = String(valA).toLowerCase();
-      valB = String(valB).toLowerCase();
-      return sortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      return 0;
     });
     return lista;
-  }, [profissionaisFiltrados, sortField, sortDir]);
+  }, [profissionaisFiltrados, sortFields]);
 
   // Paginação
   const totalPaginas = Math.max(1, Math.ceil(profissionaisOrdenados.length / itensPorPagina));
@@ -650,17 +664,22 @@ export default function Dashboard({ onNavigate }) {
       <div className="bg-[var(--cor-primaria)] text-white px-3 md:px-4 py-1 font-bold text-xs md:text-sm flex items-center justify-between gap-2">
         <span>2. RELAÇÃO DOS PROFISSIONAIS</span>
         <div className="flex items-center gap-2">
-          {sortField ? (
+          {sortFields.length > 0 ? (
             <>
               <span className="inline-flex items-center gap-1.5 bg-white/15 text-white px-2.5 py-0.5 rounded-full text-[10px] font-semibold border border-white/20">
                 <ArrowUpDown size={11} />
                 <span className="hidden sm:inline">Ordenando por</span>
-                <strong className="underline decoration-dotted underline-offset-2">{colunasNomes[sortField] || sortField}</strong>
-                {sortDir === 'asc' ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
-                <span className="hidden sm:inline ml-0.5">{sortDir === 'asc' ? '(A→Z)' : '(Z→A)'}</span>
+                {sortFields.map((s, i) => (
+                  <span key={s.field} className="inline-flex items-center gap-0.5">
+                    {i > 0 && <span className="text-white/50 mx-0.5">,</span>}
+                    <strong className="underline decoration-dotted underline-offset-2">{colunasNomes[s.field] || s.field}</strong>
+                    <span className="text-[10px] font-bold">{i + 1}</span>
+                    {s.dir === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />}
+                  </span>
+                ))}
               </span>
               <button
-                onClick={() => { setSortField(null); setSortDir('asc'); }}
+                onClick={() => setSortFields([])}
                 className="text-[10px] bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded flex items-center gap-1 cursor-pointer transition-colors hover:scale-105"
                 title="Limpar ordenação"
               >
@@ -671,12 +690,12 @@ export default function Dashboard({ onNavigate }) {
           ) : (
             <span className="text-[10px] text-white/60 font-normal flex items-center gap-1">
               <ArrowUpDown size={10} />
-              <span className="hidden sm:inline">Clique nos cabeçalhos para ordenar</span>
+              <span className="hidden sm:inline">Clique para ordenar · Shift+Click para múltiplas</span>
             </span>
           )}
         </div>
       </div>
-      <ProfessionalsTable profissionaisFiltrados={paginaAtualData} onMarcarConcluido={marcarConcluido} getCboDesc={getCboDesc} paginaAtual={paginaAtualSegura} itensPorPagina={itensPorPagina} sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+      <ProfessionalsTable profissionaisFiltrados={paginaAtualData} onMarcarConcluido={marcarConcluido} getCboDesc={getCboDesc} paginaAtual={paginaAtualSegura} itensPorPagina={itensPorPagina} sortFields={sortFields} onSort={handleSort} />
 
       {/* Pagination Controls */}
       <div className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-3 ${bgColor} border-t ${borderColor} flex-wrap`}>
