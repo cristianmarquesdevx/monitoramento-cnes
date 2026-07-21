@@ -29,7 +29,7 @@ function SortTh({ children, field, sortFields, onSort }) {
     <th
       onClick={e => onSort(field, e.shiftKey)}
       className={`border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)] cursor-pointer select-none group hover:bg-[var(--cor-primaria)] hover:text-white transition-colors ${isActive ? 'bg-[var(--cor-primaria)] text-white' : ''}`}
-      title={`Ordenar por ${children}${hint ? ` · ${hint}` : ''}`}
+      title={'Ordenar por ' + children + (hint ? ' · ' + hint : '')}
     >
       <span className="inline-flex items-center justify-center">
         {children}
