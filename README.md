@@ -101,18 +101,27 @@
 - **Modal de comparação lado a lado** (dados atuais × novos)
 - Campos editáveis antes de aprovar
 - Aprovação / Rejeição com refresh automático
+- **Detalhes de alteração**: campos alterados são registrados em auditoria e podem ser expandidos
 
 ### 👥 Administração de Usuários (Admin)
 - Listagem de todos os usuários autenticados
+- **Avatar com iniciais** colorido para cada usuário
+- **Filtro por perfil**: Admin/Editor/Visualizador
+- **Confirmação obrigatória** ao alterar perfil (evita erros)
+- **Auditoria de role_change**: toda mudança de perfil é registrada
 - Alteração de **perfis**: Administrador, Editor, Visualizador
 - Edição inline do nome do usuário
 - Busca por nome ou e-mail
+- Coluna **último acesso** com data/hora
 
 ### 📋 Histórico de Auditoria
-- Timeline completa de todas as ações (aprovações, rejeições, controles)
-- Filtro por tipo de ação
-- Busca por usuário ou descrição
-- Limite de 200 registros com ordenação cronológica reversa
+- Timeline completa de todas as ações com **avatar do usuário**
+- **Filtros avançados**: tipo de ação, usuário, data início/fim, busca textual
+- **Paginação real**: 50 registros por página com navegação
+- **Expandir detalhes**: clique para ver campos alterados (antes → depois)
+- **Exportar CSV** do log de auditoria
+- **Novos tipos de ação**: `login`, `export`, `role_change`
+- Ordenação cronológica reversa
 
 ### 🖨️ Exportação
 - **CSV**: Exporta profissionais filtrados com 12 colunas
@@ -127,6 +136,8 @@
 | **Unidades sem Cadastro** | Lista unidades órfãs e envia e-mail aos responsáveis |
 | **Detalhes KPI** | Abre lista filtrada ao clicar em qualquer KPI |
 | **Relatórios** | Relatórios consolidados por unidade/período |
+| **Meu Perfil** | Visualize e edite seu nome, veja seu perfil e dados da conta |
+| **Documentação Técnica** | Documentação da integração Zimbra SOAP API disponível no sistema |
 
 ### 🎨 Experiência do Usuário
 - **🌙 Dark Mode** com toggle e persistência em `localStorage`
@@ -151,7 +162,9 @@
 | [Lucide React](https://lucide.dev) | ^1.24.0 | Iconografia |
 | [Oxlint](https://oxc.rs) | ^1.71.0 | Linter (10-100x mais rápido que ESLint) |
 | [Vitest](https://vitest.dev) | ^3.1.3 | Test runner |
-| [Brevo](https://brevo.com) | — | Envio de e-mails transacionais (300/dia grátis) |
+| [Brevo](https://brevo.com) | — | Envio de e-mails (fallback) |
+| [Zimbra SOAP API](https://zimbra.org) | — | Envio de e-mails via servidor do governo |
+| [Python](https://python.org) | ^3.12 | Serverless function (api/send-email.py) |
 
 ---
 
@@ -176,12 +189,16 @@ monitoramento-cnes/
 │   ├── manifest.json              # Manifest PWA
 │   └── sw.js                      # Service Worker (cache-first)
 │
+├── api/
+│   └── send-email.py               # 🆕 Python — Zimbra SOAP API
+├── requirements.txt                # 🆕 Dependências Python
 ├── supabase/
 │   ├── functions/
 │   │       └── enviar-email-relacionar/
-│       │       └── index.ts           # Edge Function — e-mail Brevo
+│       │       └── index.ts           # Edge Function — e-mail Brevo (fallback)
 │   └── migrations/
-│       └── 003_add_email_responsavel.sql
+│       ├── 003_add_email_responsavel.sql
+│       └── 004_audit_details.sql   # 🆕 Migration V4
 │
 ├── src/
 │   ├── main.jsx                   # Entry point React
@@ -206,18 +223,21 @@ monitoramento-cnes/
 │   │   ├── TodayKPIs.jsx          # KPIs do dia (6 indicadores)
 │   │   ├── ChartsGrid.jsx         # Grid de 4 gráficos + expand modal
 │   │   ├── ProfessionalsTable.jsx # Tabela responsiva (desktop + mobile card)
-│   │   ├── ApprovalModal.jsx      # Modal de aprovação (diff lado a lado)
+│   │   ├── ApprovalModal.jsx      # Modal de aprovação (diff lado a lado + audit detalhes)
 │   │   ├── KpiDetailModal.jsx     # Detalhes ao clicar em KPI
 │   │   ├── ReportsModal.jsx       # Relatórios consolidados
 │   │   ├── Modal.jsx              # Componente modal genérico
 │   │   ├── Skeleton.jsx           # Loading skeleton (KPI, chart, table, etc.)
 │   │   ├── Toast.jsx              # Sistema de notificações + confirm dialog
 │   │   ├── PrintFicha.jsx         # Ficha de impressão institucional
-│   │   ├── AdminUsers.jsx         # Admin de usuários (roles/nomes)
-│   │   ├── AuditLog.jsx           # Histórico de auditoria
+│   │   ├── AdminUsers.jsx         # 🆕 Admin de usuários (avatar, filtro role, confirmação, auditoria)
+│   │   ├── AuditLog.jsx           # 🆕 Histórico de auditoria (filtros, paginação, expand, CSV)
+│   │   ├── Avatar.jsx             # 🆕 Componente de avatar com iniciais (compartilhado)
+│   │   ├── ProfileModal.jsx       # 🆕 Modal "Meu Perfil"
+│   │   ├── DocumentationModal.jsx # 🆕 Documentação técnica integrada
 │   │   ├── MultiLotacaoModal.jsx  # Gestão de múltiplas lotações
 │   │   ├── DuplicadosModal.jsx    # Gestão de CPFs duplicados
-│   │   └── UnidadesSemCadastroModal.jsx  # Unidades órfãs + e-mail
+│   │   └── UnidadesSemCadastroModal.jsx  # Unidades órfãs + e-mail (Zimbra + Brevo fallback)
 │   │
 │   ├── assets/
 │   │   ├── hero.png               # Screenshot do dashboard
@@ -301,6 +321,8 @@ Acesse: [http://localhost:5173](http://localhost:5173)
 
 > ⚠️ **Nota**: As credenciais do Supabase já estão configuradas em `src/lib/supabase.js`. Para usar seu próprio projeto, substitua a `SUPABASE_URL` e `SUPABASE_ANON_KEY`.
 
+> 🐍 **Python**: A função Zimbra SOAP API requer Python 3.12+ no Vercel. As dependências estão em `requirements.txt` (bibliotecas built-in — sem instalação adicional necessária).
+
 ---
 
 ## 🌐 Deploy no Vercel
@@ -323,12 +345,21 @@ npm install -g vercel
 vercel --prod
 ```
 
-### Variáveis de ambiente no Vercel (se necessário)
+### Variáveis de ambiente no Vercel
 
 Caso use seu próprio projeto Supabase:
 ```
 VITE_SUPABASE_URL=https://seu-projeto.supabase.co
 VITE_SUPABASE_ANON_KEY=sua-chave-anon
+```
+
+Para envio de e-mails via Zimbra:
+```
+ZIMBRA_URL=https://webmail.portovelho.ro.gov.br
+ZIMBRA_USERNAME=gecav.semusa@portovelho.ro.gov.br
+ZIMBRA_PASSWORD=sua-senha
+FROM_EMAIL=gecav.semusa@portovelho.ro.gov.br
+FROM_NAME="SEMUSA - Divisão de Controle e Avaliação do SUS"
 ```
 
 ---
@@ -411,18 +442,22 @@ ALTER publication supabase_realtime ADD TABLE solicitacoes;
 | `nome` | `text` | Nome de exibição |
 | `role` | `text` | `'admin'`, `'editor'` ou `'viewer'` |
 
-#### `audit_log`
+#### `audit_log` (V4)
 
 | Coluna | Tipo | Descrição |
 |--------|------|-----------|
 | `id` | `bigint` (PK) | Identificador único |
 | `usuario_id` | `uuid` | FK → auth.users(id) |
 | `usuario_nome` | `text` | Nome do usuário no momento da ação |
-| `acao` | `text` | `'approve'`, `'reject'`, `'controle'`, `'update'`, `'delete'` |
-| `tipo` | `text` | Tipo do alvo (`'profissional'`, `'solicitacao'`) |
+| `acao` | `text` | `'approve'`, `'reject'`, `'controle'`, `'update'`, `'delete'`, `'login'`, `'export'`, `'role_change'` |
+| `tipo` | `text` | Tipo do alvo (`'profissional'`, `'solicitacao'`, `'sessao'`, `'csv'`, `'usuario'`) |
 | `target_id` | `text` | ID do alvo |
-| `descricao` | `text` | Descrição legível |
+| `descricao` | `text` | Descrição legível (pode conter `|||JSON|||` com detalhes de alteração) |
+| `detalhes` | `jsonb` | 🆕 Dados estruturados (ex: campos alterados antes/depois) |
+| `ip_address` | `text` | 🆕 Endereço IP de origem |
 | `created_at` | `timestamptz` | Data do evento |
+
+**Índices:** `created_at DESC`, `acao`, `usuario_id`, `descricao` (gin_trgm), composto `(created_at DESC, acao)`
 
 ### Autenticação
 
@@ -436,40 +471,59 @@ O sistema usa **Supabase Auth** com 3 perfis:
 
 A role é definida na tabela `profiles`. Por padrão, novos usuários são criados como `viewer`.
 
-### Edge Function — E-mail (Brevo)
+### Envio de E-mails — Zimbra SOAP API (principal) + Brevo (fallback)
 
-A função `enviar-email-relacionar` notifica gestores de unidades sem cadastro de profissionais via [Brevo](https://brevo.com) (antigo Sendinblue — 300 e-mails/dia grátis).
+O sistema envia e-mails para gestores de unidades sem cadastro de profissionais usando **dois métodos** com fallback automático:
 
-#### Configuração
+```
+1️⃣ Zimbra SOAP API (gecav.semusa@portovelho.ro.gov.br) ← principal
+   ↓ se falhar...
+2️⃣ Brevo Edge Function (cristianmarques.devx@gmail.com) ← fallback
+```
+
+#### Método 1 — Zimbra SOAP API (recomendado)
+
+O webmail da prefeitura roda **Zimbra**, que expõe uma API SOAP via HTTPS (porta 443). A função Python `api/send-email.py`:
+
+1. Autentica no Zimbra via `AuthRequest` (e-mail + senha)
+2. Envia o e-mail via `SendMsgRequest` com template HTML institucional
+3. Retorna `{ success: true }` para o frontend
+
+**Vantagens:**
+- ✅ Domínio oficial do governo — e-mails **não vão para SPAM**
+- ✅ Zero configuração de DNS — usa a mesma autenticação do webmail
+- ✅ Funciona de qualquer lugar — HTTPS na porta 443
+- ✅ Custo zero — bibliotecas padrão Python
+
+**Configuração no Vercel:**
+```
+ZIMBRA_URL=https://webmail.portovelho.ro.gov.br
+ZIMBRA_USERNAME=gecav.semusa@portovelho.ro.gov.br
+ZIMBRA_PASSWORD=sua-senha
+FROM_EMAIL=gecav.semusa@portovelho.ro.gov.br
+FROM_NAME="SEMUSA - Divisão de Controle e Avaliação do SUS"
+```
+
+#### Método 2 — Brevo (fallback)
+
+A Edge Function `enviar-email-relacionar` usa [Brevo](https://brevo.com) como contingência caso o Zimbra esteja indisponível.
 
 ```bash
-# 1. Instale a Supabase CLI
-npm install -g supabase
-
-# 2. Faça login e link o projeto
-supabase login
-supabase link --project-ref cptkatdswfyycsgedcte
-
-# 3. Configure as secrets (Brevo)
 supabase secrets set BREVO_API_KEY=xkeysib-xxxxxxxxxxxx
 supabase secrets set BREVO_FROM_EMAIL=cristianmarques.devx@gmail.com
 supabase secrets set BREVO_FROM_NAME="SEMUSA - Divisão de Controle e Avaliação do SUS"
-
-# 4. Faça deploy
 supabase functions deploy enviar-email-relacionar --no-verify-jwt
 ```
-
-> 🔐 **Configure a chave manualmente** no [Dashboard de Secrets](https://supabase.com/dashboard/project/cptkatdswfyycsgedcte/settings/secrets) — nunca coloque a chave real no código-fonte.
 
 #### Uso
 
 O modal **"Unidades sem Cadastro"** no Dashboard permite:
 - Visualizar unidades sem profissionais cadastrados
 - Cadastrar/editar e-mail do responsável
-- Enviar e-mail individual ou em massa
+- Enviar e-mail individual ou em massa (fallback automático Zimbra → Brevo)
 - Copiar lista de unidades para área de transferência
 
-> ⚡ **Envio em massa otimizado**: a Edge Function processa todos os destinatários em **paralelo** via `Promise.allSettled` — uma única chamada de API substitui N chamadas sequenciais. Para 50 unidades, o tempo cai de ~25s para ~2s.
+> ⚡ **Envio otimizado**: os e-mails são processados com fallback automático — o sistema tenta Zimbra primeiro e, se falhar, usa Brevo.
 
 ---
 
