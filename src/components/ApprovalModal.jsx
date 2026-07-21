@@ -178,20 +178,20 @@ export default function ApprovalModal({ isOpen, onClose, solicitacao, unidades, 
           <p className="text-sm text-gray-500 mb-4">
             Campos com <span className="bg-yellow-200 px-1.5 py-0.5 rounded text-xs font-semibold">destaque amarelo</span> serão alterados.
           </p>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="bg-gray-100 px-3 py-2 font-bold text-sm text-gray-700 border-b border-gray-200">Dados Atuais</div>
+              <div className="bg-gray-100 px-2 md:px-3 py-2 font-bold text-xs md:text-sm text-gray-700 border-b border-gray-200">Dados Atuais</div>
               <div className="divide-y divide-gray-100">
                 {CAMPOS.map(campo => (
-                  <div key={campo.key} className="flex items-start px-3 py-2 min-h-[32px]">
-                    <span className="text-xs text-gray-500 w-28 shrink-0 pt-0.5">{campo.label}</span>
-                    <span className="text-sm font-medium text-gray-800">{formatValor(campo.key, antigos[campo.key], unidades)}</span>
+                  <div key={campo.key} className="flex items-start px-2 md:px-3 py-1.5 md:py-2 min-h-[28px] md:min-h-[32px]">
+                    <span className="text-[10px] md:text-xs text-gray-500 w-20 md:w-28 shrink-0 pt-0.5">{campo.label}</span>
+                    <span className="text-xs md:text-sm font-medium text-gray-800">{formatValor(campo.key, antigos[campo.key], unidades)}</span>
                   </div>
                 ))}
               </div>
             </div>
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="bg-[var(--cor-primaria-claro)] px-3 py-2 font-bold text-sm text-[var(--cor-primaria)] border-b border-gray-200">Novos Dados</div>
+              <div className="bg-[var(--cor-primaria-claro)] px-2 md:px-3 py-2 font-bold text-xs md:text-sm text-[var(--cor-primaria)] border-b border-gray-200">Novos Dados</div>
               <div className="divide-y divide-gray-100">
                 {CAMPOS.map(campo => {
                   const alterado = campoAlterado(campo.key);
@@ -200,10 +200,10 @@ export default function ApprovalModal({ isOpen, onClose, solicitacao, unidades, 
                   if (campo.type === 'select') {
                     const options = getOptions(campo.key, unidades);
                     return (
-                      <div key={campo.key} className={`flex items-start px-3 py-2.5 min-h-[36px] ${alterado ? 'bg-yellow-100 border-l-4 border-yellow-400' : ''}`} title={alterado ? `Original: ${valorAntigo || 'vazio'} → ${valorAtual || 'vazio'}` : ''}>
+                      <div key={campo.key} className={`flex items-start px-2 md:px-3 py-2 md:py-2.5 min-h-[32px] md:min-h-[36px] ${alterado ? 'bg-yellow-100 border-l-2 md:border-l-4 border-yellow-400' : ''}`} title={alterado ? `Original: ${valorAntigo || 'vazio'} → ${valorAtual || 'vazio'}` : ''}>
                         {alterado && <span className="text-yellow-600 mr-1 text-xs shrink-0 pt-1 font-bold" aria-hidden="true">⚠️</span>}
-                        <span className="text-xs text-gray-500 w-24 shrink-0 pt-1">{campo.label}</span>
-                        <select value={valorAtual} onChange={e => handleChange(campo.key, e.target.value)} className={`flex-1 text-sm border rounded px-2 py-1 ${alterado ? 'border-yellow-500 bg-yellow-50 font-bold' : 'border-gray-300'}`}>
+                        <span className="text-[10px] md:text-xs text-gray-500 w-16 md:w-24 shrink-0 pt-1">{campo.label}</span>
+                        <select value={valorAtual} onChange={e => handleChange(campo.key, e.target.value)} className={`flex-1 text-xs md:text-sm border rounded px-1.5 md:px-2 py-1 ${alterado ? 'border-yellow-500 bg-yellow-50 font-bold' : 'border-gray-300'}`}>
                           <option value="">Selecione...</option>
                           {options.map(opt => <option key={opt.value} value={opt.value}>{opt.text}</option>)}
                         </select>
@@ -211,23 +211,45 @@ export default function ApprovalModal({ isOpen, onClose, solicitacao, unidades, 
                     );
                   }
                   return (
-                    <div key={campo.key} className={`flex items-start px-3 py-2.5 min-h-[36px] ${alterado ? 'bg-yellow-100 border-l-4 border-yellow-400' : ''}`} title={alterado ? `Original: ${valorAntigo || 'vazio'} → ${valorAtual || 'vazio'}` : ''}>
+                    <div key={campo.key} className={`flex items-start px-2 md:px-3 py-2 md:py-2.5 min-h-[32px] md:min-h-[36px] ${alterado ? 'bg-yellow-100 border-l-2 md:border-l-4 border-yellow-400' : ''}`} title={alterado ? `Original: ${valorAntigo || 'vazio'} → ${valorAtual || 'vazio'}` : ''}>
                       {alterado && <span className="text-yellow-600 mr-1 text-xs shrink-0 pt-1 font-bold" aria-hidden="true">⚠️</span>}
-                      <span className="text-xs text-gray-500 w-24 shrink-0 pt-1">{campo.label}</span>
-                      <input type="text" value={valorAtual} onChange={e => handleChange(campo.key, e.target.value)} className={`flex-1 text-sm border rounded px-2 py-1 ${alterado ? 'border-yellow-500 bg-yellow-50 font-bold' : 'border-gray-300'}`} />
+                      <span className="text-[10px] md:text-xs text-gray-500 w-16 md:w-24 shrink-0 pt-1">{campo.label}</span>
+                      <input type="text" value={valorAtual} onChange={e => handleChange(campo.key, e.target.value)} className={`flex-1 text-xs md:text-sm border rounded px-1.5 md:px-2 py-1 ${alterado ? 'border-yellow-500 bg-yellow-50 font-bold' : 'border-gray-300'}`} />
                     </div>
                   );
                 })}
               </div>
             </div>
           </div>
+
+          {/* Mobile: tabela simplificada com só os alterados */}
+          <div className="block md:hidden mt-3">
+            {CAMPOS.filter(campo => campoAlterado(campo.key)).length > 0 && (
+              <details className="bg-yellow-50 border border-yellow-200 rounded-lg p-2">
+                <summary className="text-[11px] font-bold text-yellow-800 cursor-pointer">
+                  {CAMPOS.filter(campo => campoAlterado(campo.key)).length} campo(s) alterado(s) — clique para ver
+                </summary>
+                <div className="mt-2 space-y-1">
+                  {CAMPOS.filter(campo => campoAlterado(campo.key)).map(campo => (
+                    <div key={campo.key} className="text-[10px] flex flex-col gap-0.5 bg-white rounded p-1.5 border border-yellow-100">
+                      <span className="font-bold text-gray-600">{campo.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-red-500 line-through">{antigos[campo.key] || 'vazio'}</span>
+                        <span className="text-green-600 font-medium">→ {editData[campo.key] || 'vazio'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+          </div>
         </>
       )}
 
-      <div className="flex justify-end gap-3 mt-5 pt-3 border-t border-gray-200">
-        <button onClick={onClose} disabled={processando} className="px-5 py-2 rounded-lg text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all cursor-pointer disabled:opacity-50">Cancelar</button>
-        <button onClick={handleRejeitar} disabled={processando} className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-all cursor-pointer disabled:opacity-50"><XCircle size={16} /> {processando ? '...' : 'Rejeitar'}</button>
-        <button onClick={handleConfirmar} disabled={processando} className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition-all cursor-pointer disabled:opacity-50"><CheckCircle size={16} /> {processando ? '...' : (sol.tipo === 'delete' ? 'Excluir' : 'Confirmar')}</button>
+      <div className="flex justify-end gap-2 md:gap-3 mt-5 pt-3 border-t border-gray-200 flex-wrap">
+        <button onClick={onClose} disabled={processando} className="px-4 md:px-5 py-2 rounded-lg text-xs md:text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all cursor-pointer disabled:opacity-50 flex-1 sm:flex-none">Cancelar</button>
+        <button onClick={handleRejeitar} disabled={processando} className="flex items-center justify-center gap-1.5 px-4 md:px-5 py-2 rounded-lg text-xs md:text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-all cursor-pointer disabled:opacity-50 flex-1 sm:flex-none"><XCircle size={16} /> {processando ? '...' : 'Rejeitar'}</button>
+        <button onClick={handleConfirmar} disabled={processando} className="flex items-center justify-center gap-1.5 px-4 md:px-5 py-2 rounded-lg text-xs md:text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition-all cursor-pointer disabled:opacity-50 flex-1 sm:flex-none"><CheckCircle size={16} /> {processando ? '...' : (sol.tipo === 'delete' ? 'Excluir' : 'Confirmar')}</button>
       </div>
     </Modal>
   );

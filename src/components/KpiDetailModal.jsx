@@ -25,7 +25,29 @@ export default function KpiDetailModal({ isOpen, onClose, titulo, profissionais 
       <p className="text-sm text-gray-500 mb-3">
         Total: <strong className="text-[var(--cor-primaria)]">{profissionais.length}</strong> profissionais
       </p>
-      <div className="overflow-x-auto border border-gray-200 rounded-lg max-h-[400px] overflow-y-auto">
+
+      {/* Mobile cards */}
+      <div className="block md:hidden space-y-2 mb-3 max-h-[400px] overflow-y-auto">
+        {profissionais.length === 0 ? (
+          <div className="text-center py-6 text-gray-400">Nenhum profissional encontrado.</div>
+        ) : profissionais.map((p, i) => (
+          <div key={p.id || i} className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
+            <div className="font-bold text-sm mb-1.5">{p.nome_profissional || '—'}</div>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+              <div><span className="text-gray-500">CPF:</span> <span className="font-bold">{p.cpf || '—'}</span></div>
+              <div><span className="text-gray-500">CNS:</span> <span className="font-bold">{p.cns || '—'}</span></div>
+              <div className="col-span-2"><span className="text-gray-500">CBO:</span> <span className="font-bold">{descCbo(p.cbo)}</span></div>
+              <div><span className="text-gray-500">Cons.:</span> <span className="font-bold">{p.conselho || '—'}</span></div>
+              <div><span className="text-gray-500">Reg.:</span> <span className="font-bold">{p.registro || '—'}</span></div>
+              <div><span className="text-gray-500">Cargo:</span> <span className="font-bold">{p.cargo_funcao || '—'}</span></div>
+              <div><span className="text-gray-500">Unid.:</span> <span className="font-bold">{p.cnes || '—'}</span></div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-x-auto border border-gray-200 rounded-lg max-h-[400px] overflow-y-auto">
         <table className="w-full border-collapse text-sm">
           <thead className="sticky top-0 z-10">
             <tr className="bg-[var(--cor-primaria-claro)] text-center text-xs font-bold uppercase text-gray-700">

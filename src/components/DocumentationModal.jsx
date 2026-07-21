@@ -223,7 +223,28 @@ function injectStyles() {
     font-size: 0.78em;
     color: #666;
   }
-`;
+
+  /* Responsivo: mobile */
+  @media (max-width: 640px) {
+    .doc-body .doc-section { padding: 14px; }
+    .doc-body .doc-cover { padding: 20px 14px; }
+    .doc-body .doc-cover h1 { font-size: 1.2em; }
+    .doc-body .doc-cover h2 { font-size: 0.85em; }
+    .doc-body table { font-size: 0.75em; }
+    .doc-body th, .doc-body td { padding: 4px 6px; }
+    .doc-body pre { padding: 10px 12px; font-size: 0.7em; }
+    .doc-body .flow .box { min-width: 60px; padding: 6px 10px; font-size: 0.7em; }
+    .doc-body code { font-size: 0.78em; }
+    .doc-body .doc-h2 { font-size: 1.1em; }
+    .doc-body h3 { font-size: 0.9em; }
+    .doc-body h4 { font-size: 0.8em; }
+    .doc-body p { font-size: 0.82em; }
+    .doc-body ul, .doc-body ol { margin-left: 14px; }
+    .doc-body li { font-size: 0.8em; }
+    .doc-body .info-box,
+    .doc-body .success-box,
+    .doc-body .warn-box { padding: 8px 10px; font-size: 0.8em; }
+  }`;
   document.head.appendChild(styles);
 }
 
