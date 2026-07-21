@@ -194,7 +194,7 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
           const existe = todasUnidades?.some(u => u.cnes === cnes);
           if (!existe) {
             erros++;
-            resultados.push({ linha: i + 1, cnes, nome: unidade.nome_unidade, success: false, error: 'CNES não encontrado' });
+            resultados.push({ linha: i + 1, cnes, nome: `CNES ${cnes}`, success: false, error: 'CNES não encontrado' });
             continue;
           }
         } else if (possivelCnes.includes('@')) {
@@ -226,7 +226,10 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
       }
     }
 
-    setLoteResultado({ sucessos, erros, total: linhas.length, detalhes: resultados });
+    const ignorados = unidades.length - Math.min(linhas.length, unidades.length);
+    const sobrando = linhas.length > unidades.length ? linhas.length - unidades.length : 0;
+
+    setLoteResultado({ sucessos, erros, total: Math.min(linhas.length, unidades.length), detalhes: resultados, ignorados, sobrando });
     setLoteSalvando(false);
 
     if (erros === 0) {
@@ -352,7 +355,7 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
               </button>
             </div>
             <span className="text-[10px] text-gray-500">
-              {loteText.trim().split('\n').filter(Boolean).length} linha(s) digitada(s)
+              {loteText.trim().split('\n').map(l => l.trim()).filter(Boolean).length} linha(s) digitada(s)
             </span>
           </div>
 
@@ -365,6 +368,16 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
                 ) : (
                   <span className="text-amber-700">⚠️ {loteResultado.sucessos} salvos, {loteResultado.erros} falha(s)</span>
                 )}
+              {loteResultado.ignorados > 0 && (
+                <span className="text-orange-600 ml-2">
+                  ⚠️ {loteResultado.ignorados} unidade(s) sem e-mail (faltou linha)
+                </span>
+              )}
+              {loteResultado.sobrando > 0 && (
+                <span className="text-orange-600 ml-2">
+                  ⚠️ {loteResultado.sobrando} linha(s) ignorada(s) (excedeu unidades)
+                </span>
+              )}
               </div>
               {loteResultado.erros > 0 && (
                 <div className="mt-1 max-h-[80px] overflow-y-auto">
