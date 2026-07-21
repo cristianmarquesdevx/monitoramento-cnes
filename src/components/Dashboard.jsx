@@ -7,7 +7,7 @@ import LoadingSkeleton from './Skeleton';
 import KPICards from './KPICards';
 import ProfessionalsTable from './ProfessionalsTable';
 import TodayKPIs from './TodayKPIs';
-import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3, UserCircle, Shield, History, Bell, Eye, Trash2, Fingerprint, BookOpen, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3, UserCircle, Shield, History, Bell, Eye, Trash2, Fingerprint, BookOpen, ArrowUpDown, ArrowUp, ArrowDown, Sun, Moon } from 'lucide-react';
 
 const ChartsGrid = lazy(() => import('./ChartsGrid'));
 const ApprovalModal = lazy(() => import('./ApprovalModal'));
