@@ -67,8 +67,9 @@ export function AuthProvider({ children }) {
     if (error) throw error;
 
     // Registrar login na auditoria (fire-and-forget)
+    // Usa user_metadata em vez de profile (profile pode estar desatualizado no momento do login)
     try {
-      const nome = profile?.nome || data.user?.user_metadata?.nome || data.user?.email?.split('@')[0] || 'Usuário';
+      const nome = data.user?.user_metadata?.nome || data.user?.email?.split('@')[0] || 'Usuário';
       supabase.rpc('log_audit', {
         p_usuario_id: data.user.id,
         p_usuario_nome: nome,

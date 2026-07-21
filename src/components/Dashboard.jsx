@@ -47,6 +47,7 @@ export default function Dashboard({ onNavigate }) {
   const [realtimeAtivo, setRealtimeAtivo] = useState(false);
   const [dataEmissao, setDataEmissao] = useState(() => new Date().toISOString().split('T')[0]);
   const buscaRef = useRef(null);
+  const notificacaoTimerRef = useRef(null);
 
   // Resetar página quando filtros mudarem
   useEffect(() => { setPaginaAtual(1); }, [unidadeFiltro, buscaGlobal, filtroEspecialidade, filtroControle, filtroDataInicio, filtroDataFim, tipoBusca, itensPorPagina]);
@@ -59,7 +60,7 @@ export default function Dashboard({ onNavigate }) {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
-    localStorage.setItem('cnesDark', darkMode);
+    localStorage.setItem('cnesDark', JSON.stringify(darkMode));
   }, [darkMode]);
 
   useEffect(() => { recarregar(); }, [recarregar]);
@@ -71,7 +72,8 @@ export default function Dashboard({ onNavigate }) {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'solicitacoes' }, (payload) => {
         const tipo = payload.new?.tipo === 'update' ? 'Alteração' : payload.new?.tipo === 'delete' ? 'Exclusão' : 'Nova';
         setNotificacao({ msg: `Nova solicitação de ${tipo}`, tipo: 'info' });
-        setTimeout(() => setNotificacao(null), 5000);
+        if (notificacaoTimerRef.current) clearTimeout(notificacaoTimerRef.current);
+        notificacaoTimerRef.current = setTimeout(() => { setNotificacao(null); notificacaoTimerRef.current = null; }, 5000);
       })
       .subscribe((status) => {
         setRealtimeAtivo(status === 'SUBSCRIBED');
@@ -259,26 +261,30 @@ export default function Dashboard({ onNavigate }) {
   };
 
   const marcarTodosConcluidos = async () => {
+    const ids = profissionaisFiltrados.map(p => p.id);
+    if (ids.length === 0) return;
     try {
-      const results = await Promise.allSettled(
-        profissionaisFiltrados.map(p =>
-          supabase.from('profissionais').update({ controle_feito: true }).eq('id', p.id)
-        )
-      );
-      // Atualiza todos que tiveram sucesso
-      const falhas = [];
-      results.forEach((r, i) => {
-        if (r.status === 'fulfilled') {
-          setProfissionais(prev => prev.map(pp =>
-            pp.id === profissionaisFiltrados[i].id ? { ...pp, controle_feito: true } : pp
-          ));
-        } else {
-          falhas.push(profissionaisFiltrados[i].id);
-        }
-      });
-      if (falhas.length > 0) {
-        console.error('Falhas ao marcar:', falhas.length);
-      }
+      const { error } = await supabase
+        .from('profissionais')
+        .update({ controle_feito: true })
+        .in('id', ids);
+
+      if (error) throw error;
+
+      // Atualiza estado local
+      setProfissionais(prev => prev.map(pp =>
+        ids.includes(pp.id) ? { ...pp, controle_feito: true } : pp
+      ));
+
+      // Auditar conclusão em lote
+      supabase.rpc('log_audit', {
+        p_usuario_id: user.id,
+        p_usuario_nome: nomeUsuario,
+        p_acao: 'controle',
+        p_tipo: 'profissional',
+        p_target_id: '',
+        p_descricao: `Marcou ${ids.length} profissional(is) como concluído em lote`
+      }).catch(() => {});
     } catch (e) { console.error('Erro:', e.message); }
   };
 
@@ -287,7 +293,7 @@ export default function Dashboard({ onNavigate }) {
     const rows = profissionaisFiltrados.map(p => [p.nome_profissional, p.cpf, p.cns, p.cbo, p.conselho, p.registro, p.uf_conselho, p.cargo_funcao, p.tipo_vinculo, p.carga_horaria, p.setor_equipe, unidades.find(u => u.cnes === p.cnes)?.nome_unidade || p.cnes].map(v => `"${v || ''}"`).join(','));
     const blob = new Blob([headers.join(',') + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'profissionais.csv'; link.click();
-    URL.revokeObjectURL(link.href);
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 
     // Auditar exportação (fire-and-forget)
     supabase.rpc('log_audit', {
@@ -591,7 +597,7 @@ export default function Dashboard({ onNavigate }) {
       </div>
 
       <div className="bg-[var(--cor-primaria)] text-white px-3 md:px-4 py-1 font-bold text-xs md:text-sm">2. RELAÇÃO DOS PROFISSIONAIS</div>
-      <ProfessionalsTable profissionaisFiltrados={paginaAtualData} onMarcarConcluido={marcarConcluido} getCboDesc={getCboDesc} paginaAtual={paginaAtualSegura} />
+      <ProfessionalsTable profissionaisFiltrados={paginaAtualData} onMarcarConcluido={marcarConcluido} getCboDesc={getCboDesc} paginaAtual={paginaAtualSegura} itensPorPagina={itensPorPagina} />
 
       {/* Pagination Controls */}
       <div className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-3 ${bgColor} border-t ${borderColor} flex-wrap`}>

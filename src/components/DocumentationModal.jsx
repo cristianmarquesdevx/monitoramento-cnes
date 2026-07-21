@@ -1,7 +1,12 @@
 import Modal from './Modal';
 
-const styles = document.createElement('style');
-styles.textContent = `
+const STYLE_ID = 'doc-modal-styles';
+
+function injectStyles() {
+  if (document.getElementById(STYLE_ID)) return;
+  const styles = document.createElement('style');
+  styles.id = STYLE_ID;
+  styles.textContent = `
   .doc-body {
     font-family: 'Inter', -apple-system, sans-serif;
     color: #1a1a2e;
@@ -219,9 +224,15 @@ styles.textContent = `
     color: #666;
   }
 `;
-document.head.appendChild(styles);
+  document.head.appendChild(styles);
+}
+
+injectStyles();
 
 export default function DocumentationModal({ isOpen, onClose }) {
+  // Injeta estilos apenas uma vez (com ID único para evitar duplicatas)
+  injectStyles();
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="📖 Documentação Técnica — Integração Zimbra SOAP API" maxWidth="max-w-[1000px]">
       <div className="doc-body">

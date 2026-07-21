@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import {
   ArrowLeft, RefreshCw, CheckCircle, XCircle, Edit3, Trash2,
   MousePointerClick, Search, Download, LogIn, Shield,
   ChevronDown, ChevronRight, Filter, Calendar, History
 } from 'lucide-react';
+import Avatar from './Avatar';
 
 const ITENS_POR_PAGINA = 50;
 
@@ -28,11 +29,6 @@ function formatDataHora(data) {
   });
 }
 
-function formatData(data) {
-  if (!data) return '';
-  return new Date(data).toLocaleDateString('pt-BR');
-}
-
 function extrairUsuarioOptions(logs) {
   const map = new Map();
   logs.forEach(l => {
@@ -41,36 +37,6 @@ function extrairUsuarioOptions(logs) {
     }
   });
   return [{ id: '__todos__', nome: 'Todos os usuários' }, ...Array.from(map.values())];
-}
-
-function getInitials(nome) {
-  if (!nome) return '?';
-  const parts = nome.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-}
-
-const AVATAR_COLORS = [
-  '#003c7d', '#28a745', '#dc3545', '#ffc107', '#17a2b8',
-  '#6f42c1', '#fd7e14', '#20c997', '#e83e8c', '#0056a8'
-];
-
-function AvatarIniciais({ nome, size = 28 }) {
-  const iniciais = getInitials(nome);
-  const colorIndex = nome ? nome.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % AVATAR_COLORS.length : 0;
-  return (
-    <div className="rounded-full flex items-center justify-center font-bold text-white shrink-0"
-      style={{
-        width: size,
-        height: size,
-        fontSize: size * 0.4,
-        background: AVATAR_COLORS[colorIndex],
-      }}
-      title={nome}
-    >
-      {iniciais}
-    </div>
-  );
 }
 
 function DetalhesAlteracao({ detalhes, descricao }) {
@@ -187,7 +153,7 @@ export default function AuditLog({ onBack }) {
     link.href = URL.createObjectURL(blob);
     link.download = `auditoria_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
-    URL.revokeObjectURL(link.href);
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   };
 
   const toggleExpand = (id) => {
@@ -300,7 +266,7 @@ export default function AuditLog({ onBack }) {
                   className="flex items-start gap-3 p-3 cursor-pointer hover:bg-gray-50 transition-colors"
                   onClick={() => hasDetalhes && toggleExpand(log.id)}
                 >
-                  <AvatarIniciais nome={log.usuario_nome} size={28} />
+                  <Avatar nome={log.usuario_nome} size={28} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 text-sm flex-wrap">
                       <span className="font-bold text-gray-800">{log.usuario_nome || 'Desconhecido'}</span>

@@ -5,38 +5,13 @@ import {
   Shield, ShieldCheck, Eye, ArrowLeft, Search, RefreshCw,
   Filter, AlertTriangle, CheckCircle2
 } from 'lucide-react';
+import Avatar from './Avatar';
 
 const ROLE_CONFIG = {
   admin: { label: 'Administrador', color: 'bg-purple-100 text-purple-700 border-purple-300', icon: ShieldCheck },
   editor: { label: 'Editor', color: 'bg-blue-100 text-blue-700 border-blue-300', icon: Shield },
   viewer: { label: 'Visualizador', color: 'bg-gray-100 text-gray-600 border-gray-300', icon: Eye },
 };
-
-const AVATAR_COLORS = ['#003c7d', '#28a745', '#dc3545', '#ffc107', '#17a2b8', '#6f42c1', '#fd7e14', '#20c997', '#e83e8c'];
-
-function getInitials(nome) {
-  if (!nome) return '?';
-  const parts = nome.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-}
-
-function Avatar({ nome, size = 32 }) {
-  const iniciais = getInitials(nome);
-  const colorIndex = nome ? nome.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % AVATAR_COLORS.length : 0;
-  return (
-    <div className="rounded-full flex items-center justify-center font-bold text-white shrink-0"
-      style={{
-        width: size, height: size,
-        fontSize: size * 0.4,
-        background: AVATAR_COLORS[colorIndex],
-      }}
-      title={nome}
-    >
-      {iniciais}
-    </div>
-  );
-}
 
 export default function AdminUsers({ onBack }) {
   const { profile: currentProfile } = useAuth();

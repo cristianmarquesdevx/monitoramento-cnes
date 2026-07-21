@@ -9,12 +9,12 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [dark, setDark] = useState(() => localStorage.getItem('loginTheme') === 'dark');
+  const [dark, setDark] = useState(() => localStorage.getItem('cnesDark') === 'true');
 
   const toggleTheme = () => {
     setDark(d => {
       const next = !d;
-      localStorage.setItem('loginTheme', next ? 'dark' : 'light');
+      localStorage.setItem('cnesDark', JSON.stringify(next));
       return next;
     });
   };

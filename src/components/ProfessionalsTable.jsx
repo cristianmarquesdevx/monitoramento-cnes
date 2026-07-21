@@ -11,7 +11,8 @@ function ProfessionalsTable({
   profissionaisFiltrados,
   onMarcarConcluido,
   getCboDesc,
-  paginaAtual = 1
+  paginaAtual = 1,
+  itensPorPagina = 50
 }) {
   return (
     <div className="overflow-x-auto bg-white">
@@ -28,7 +29,7 @@ function ProfessionalsTable({
             <div key={p.id} className={`bg-white rounded-lg border border-gray-300 p-3 shadow-sm ${p.controle_feito ? 'opacity-70' : ''}`}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-sm text-gray-500">#{(paginaAtual - 1) * 50 + i + 1}</span>
+                  <span className="font-bold text-sm text-gray-500">#{(paginaAtual - 1) * itensPorPagina + i + 1}</span>
                   {novo && (
                     <span className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-green-300">
                       <CheckCircle2 size={10} /> Novo
@@ -102,7 +103,7 @@ function ProfessionalsTable({
                       className="w-4 h-4 cursor-pointer" title={p.controle_feito ? 'Concluído' : 'Marcar como concluído'} />
                   </div>
                 </td>
-                <td className="border border-gray-400 px-2 py-1.5 text-center text-[clamp(11px,1.6vw,13px)] font-bold">{(paginaAtual - 1) * 50 + i + 1}</td>
+                <td className="border border-gray-400 px-2 py-1.5 text-center text-[clamp(11px,1.6vw,13px)] font-bold">{(paginaAtual - 1) * itensPorPagina + i + 1}</td>
                 <td className="border border-gray-400 px-2 py-1.5 text-center text-[clamp(11px,1.6vw,13px)] font-bold">{p.cnes || ''}</td>
                 <td className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)] font-bold">{p.nome_profissional || ''}</td>
                 <td className="border border-gray-400 px-2 py-1.5 text-center text-[clamp(11px,1.6vw,13px)] font-bold">{p.cpf || ''}</td>
