@@ -35,7 +35,7 @@ async function enviarComFallback(payload) {
   }
 }
 
-export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, todasUnidades }) {
+export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, todasUnidades, onEmailSaved }) {
   const toast = useToast();
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState(null);
@@ -59,6 +59,7 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
       toast.success('E-mail salvo com sucesso!');
       setEditandoEmail(null);
       setNovoEmail('');
+      if (onEmailSaved) onEmailSaved();
     } catch (e) {
       toast.error('Erro ao salvar e-mail: ' + e.message);
     }

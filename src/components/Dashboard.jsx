@@ -7,7 +7,7 @@ import LoadingSkeleton from './Skeleton';
 import KPICards from './KPICards';
 import ProfessionalsTable from './ProfessionalsTable';
 import TodayKPIs from './TodayKPIs';
-import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3, UserCircle, Sun, Moon, Shield, History, Bell, Eye, Trash2, Fingerprint, BookOpen } from 'lucide-react';
+import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3, UserCircle, Shield, History, Bell, Eye, Trash2, Fingerprint, BookOpen } from 'lucide-react';
 
 const ChartsGrid = lazy(() => import('./ChartsGrid'));
 const ApprovalModal = lazy(() => import('./ApprovalModal'));
@@ -438,9 +438,6 @@ export default function Dashboard({ onNavigate }) {
             <button onClick={() => setDocumentacaoModalOpen(true)} className="text-emerald-600 hover:text-emerald-800 p-1 rounded hover:bg-emerald-50 cursor-pointer" title="Documentação Técnica">
               <BookOpen size={14} />
             </button>
-            <button onClick={() => setDarkMode(!darkMode)} className={`p-1 rounded cursor-pointer ${darkMode ? 'text-yellow-400 hover:bg-gray-700' : 'text-gray-500 hover:bg-gray-200'}`} title={darkMode ? 'Modo claro' : 'Modo escuro'}>
-              {darkMode ? <Sun size={14} /> : <Moon size={14} />}
-            </button>
           </div>
           <input type="date" value={dataEmissao} onChange={e => setDataEmissao(e.target.value)} className="w-auto max-w-[150px] border border-gray-300 rounded px-2 py-1 text-xs md:text-sm" />
           <div className={`flex items-center gap-1.5 font-bold text-xs md:text-sm px-2 md:px-3 py-1 rounded-full ${cardBg} border-2 ${borderColor}`}>
@@ -709,6 +706,7 @@ export default function Dashboard({ onNavigate }) {
             onClose={() => setUnidadesSemCadastroModalOpen(false)}
             unidades={unidadesSemCadastro}
             todasUnidades={unidades}
+            onEmailSaved={refreshData}
           />
         </Suspense>
         <Suspense fallback={null}>

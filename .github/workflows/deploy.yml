@@ -42,7 +42,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # ═══ Supabase Edge Functions ═══
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy Supabase Edge Functions
+        run: |
+          supabase functions deploy list-users --no-verify-jwt --project-ref cptkatdswfyycsgedcte
+          supabase functions deploy enviar-email-relacionar --no-verify-jwt --project-ref cptkatdswfyycsgedcte
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       
+      # ═══ Vercel (Frontend + API Python) ═══
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25
         with:

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, Eye, EyeOff, Moon, Sun, Shield, UserCircle, Mail, Lock } from 'lucide-react';
+import { LogIn, Eye, EyeOff, Shield, UserCircle, Mail, Lock } from 'lucide-react';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -9,15 +9,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [dark, setDark] = useState(() => localStorage.getItem('cnesDark') === 'true');
-
-  const toggleTheme = () => {
-    setDark(d => {
-      const next = !d;
-      localStorage.setItem('cnesDark', JSON.stringify(next));
-      return next;
-    });
-  };
+  const [dark] = useState(() => localStorage.getItem('cnesDark') === 'true');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,11 +49,6 @@ export default function LoginScreen() {
       <div className={`relative w-full max-w-[520px] rounded-lg overflow-hidden shadow-2xl ${dark ? 'bg-[#1e1e2e]' : 'bg-white'}`}
            style={{ border: dark ? '1px solid #444' : '1px solid #000' }}>
         
-        {/* Theme Toggle */}
-        <button onClick={toggleTheme}
-          className={`absolute top-2.5 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full border cursor-pointer transition-all duration-300 hover:bg-[var(--cor-primaria)] hover:text-white ${dark ? 'bg-[#2a2a3e] border-[#3a3a4e] text-gray-300' : 'bg-gray-100 border-gray-300 text-gray-700'}`}>
-          {dark ? <Sun size={14} /> : <Moon size={14} />}
-        </button>
 
         {/* Header - igual ao dashboard */}
         <div className={`flex items-center justify-between px-4 py-3 flex-wrap gap-2.5 ${dark ? 'bg-[#1e1e2e]' : 'bg-white'}`}>

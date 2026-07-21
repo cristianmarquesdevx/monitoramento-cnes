@@ -29,24 +29,51 @@ export default function AdminUsers({ onBack }) {
   async function carregarUsuarios() {
     setLoading(true);
     try {
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      if (authError) throw authError;
-
+      // Busca perfis (profiles) — SEMPRE funciona com o client anon
       const { data: profiles, error: profError } = await supabase.from('profiles').select('*');
       if (profError) throw profError;
+
+      // Busca dados de autenticação via Edge Function (usa service_role internamente)
+      // Evita o erro 403 do client-side ao chamar supabase.auth.admin.listUsers()
+      let authUsers = [];
+      try {
+        const { data, error: fnError } = await supabase.functions.invoke('list-users');
+        if (!fnError && data?.users) {
+          authUsers = data.users;
+        } else {
+          console.warn('Edge Function list-users falhou, usando apenas profiles:', fnError?.message);
+        }
+      } catch (e) {
+        console.warn('Erro ao invocar list-users, usando apenas profiles:', e.message);
+      }
 
       const profMap = {};
       (profiles || []).forEach(p => { profMap[p.id] = p; });
 
-      const combined = (authUsers?.users || []).map(u => ({
-        id: u.id,
-        email: u.email,
-        created_at: u.created_at,
-        last_sign_in_at: u.last_sign_in_at,
-        nome: profMap[u.id]?.nome || u.user_metadata?.nome || u.email?.split('@')[0] || '',
-        role: profMap[u.id]?.role || 'viewer',
-      }));
-      setUsuarios(combined);
+      // Se a Edge Function funcionou, combina authUsers + profiles
+      // Senão, usa apenas os dados da tabela profiles
+      if (authUsers.length > 0) {
+        const combined = authUsers.map(u => ({
+          id: u.id,
+          email: u.email,
+          created_at: u.created_at,
+          last_sign_in_at: u.last_sign_in_at,
+          nome: profMap[u.id]?.nome || u.user_metadata?.nome || u.email?.split('@')[0] || '',
+          role: profMap[u.id]?.role || 'viewer',
+        }));
+        setUsuarios(combined);
+      } else {
+        // Fallback: usa apenas profiles (sem email, sem last_sign_in)
+        const combined = (profiles || []).map(p => ({
+          id: p.id,
+          email: '',
+          created_at: p.created_at || '',
+          last_sign_in_at: '',
+          nome: p.nome || '',
+          role: p.role || 'viewer',
+        }));
+        setUsuarios(combined);
+      }
     } catch (e) {
       console.error('Erro ao carregar usuários:', e.message);
       setMensagem('❌ Erro ao carregar: ' + e.message);
