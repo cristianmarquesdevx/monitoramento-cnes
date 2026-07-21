@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Modal from './Modal';
 import { supabase } from '../lib/supabase';
 import { useToast } from './Toast';
-import { Mail, Send, AlertTriangle, CheckCircle, Copy, Pencil, X, Trash2 } from 'lucide-react';
+import { Mail, Send, AlertTriangle, CheckCircle, Copy, Pencil, X, Trash2, ClipboardList, Check } from 'lucide-react';
 
 // ===== Múltiplos métodos de envio (fallback automático) =====
 const EMAIL_API = '/api/send-email';  // Python SMTP (Vercel)
@@ -41,6 +41,10 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
   const [resultado, setResultado] = useState(null);
   const [editandoEmail, setEditandoEmail] = useState(null);
   const [novoEmail, setNovoEmail] = useState('');
+  const [showLote, setShowLote] = useState(false);
+  const [loteText, setLoteText] = useState('');
+  const [loteSalvando, setLoteSalvando] = useState(false);
+  const [loteResultado, setLoteResultado] = useState(null);
 
   const totalUnidades = todasUnidades?.length || 0;
   const comProfissionais = totalUnidades - (unidades?.length || 0);
@@ -152,6 +156,88 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
     }
   };
 
+  const handlePreencherLote = async () => {
+    // Formato esperado: cnes;email (um por linha)
+    // Ou apenas: email (um por linha, na ordem da tabela)
+    const linhas = loteText.trim().split('\n').map(l => l.trim()).filter(Boolean);
+    if (linhas.length === 0) {
+      toast.warning('Cole os e-mails primeiro.');
+      return;
+    }
+
+    if (!await toast.confirm(`Preencher e-mail de ${Math.min(linhas.length, unidades.length)} unidade(s)?`)) return;
+
+    setLoteSalvando(true);
+    setLoteResultado(null);
+
+    const resultados = [];
+    let sucessos = 0;
+    let erros = 0;
+
+    for (let i = 0; i < linhas.length && i < unidades.length; i++) {
+      const linha = linhas[i];
+      const unidade = unidades[i];
+
+      // Tenta parsear como "cnes;email" ou apenas "email"
+      let email = '';
+      let cnes = unidade.cnes;
+
+      if (linha.includes(';')) {
+        const partes = linha.split(';');
+        const possivelCnes = partes[0].trim();
+        const possivelEmail = partes.slice(1).join(';').trim();
+        // Se o primeiro campo parece um CNES (só dígitos), usa como cnes
+        if (/^\d+$/.test(possivelCnes) && possivelEmail.includes('@')) {
+          cnes = possivelCnes;
+          email = possivelEmail;
+          // Verifica se o CNES existe no banco
+          const existe = todasUnidades?.some(u => u.cnes === cnes);
+          if (!existe) {
+            erros++;
+            resultados.push({ linha: i + 1, cnes, nome: unidade.nome_unidade, success: false, error: 'CNES não encontrado' });
+            continue;
+          }
+        } else if (possivelCnes.includes('@')) {
+          email = possivelCnes;
+        } else {
+          email = possivelEmail || possivelCnes;
+        }
+      } else {
+        email = linha;
+      }
+
+      if (!email.includes('@')) {
+        erros++;
+        resultados.push({ linha: i + 1, cnes, nome: unidade.nome_unidade, success: false, error: 'E-mail inválido' });
+        continue;
+      }
+
+      try {
+        const { error } = await supabase
+          .from('unidades_saude')
+          .update({ email_responsavel: email })
+          .eq('cnes', cnes);
+        if (error) throw error;
+        sucessos++;
+        resultados.push({ linha: i + 1, cnes, nome: unidade.nome_unidade, success: true, email });
+      } catch (e) {
+        erros++;
+        resultados.push({ linha: i + 1, cnes, nome: unidade.nome_unidade, success: false, error: e.message });
+      }
+    }
+
+    setLoteResultado({ sucessos, erros, total: linhas.length, detalhes: resultados });
+    setLoteSalvando(false);
+
+    if (erros === 0) {
+      toast.success(`${sucessos} e-mail(s) preenchido(s) com sucesso!`);
+    } else {
+      toast.success(`${sucessos} de ${linhas.length} preenchido(s). ${erros} falha(s).`);
+    }
+
+    if (onEmailSaved) onEmailSaved();
+  };
+
   const copiarLista = async () => {
     const texto = unidades.map(u =>
       `${u.cnes} - ${u.nome_unidade}${u.responsavel ? ` | Responsável: ${u.responsavel}` : ''}${u.email_responsavel ? ` | E-mail: ${u.email_responsavel}` : ''}`
@@ -208,8 +294,93 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
           <Copy size={14} />
           Copiar Lista
         </button>
+        <button
+          onClick={() => { setShowLote(!showLote); setLoteResultado(null); }}
+          className={`inline-flex items-center gap-1.5 px-4 py-2 rounded text-xs font-bold cursor-pointer transition-all ${
+            showLote
+              ? 'bg-[var(--cor-primaria)] text-white'
+              : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+          }`}
+        >
+          <ClipboardList size={14} />
+          Preencher em Lote
+        </button>
 
       </div>
+
+      {/* Painel de preenchimento em lote */}
+      {showLote && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+              <ClipboardList size={14} />
+              Preencher E-mails em Lote
+            </h4>
+            <span className="text-[10px] text-emerald-600">
+              {unidades.length} unidade(s) na lista
+            </span>
+          </div>
+          <p className="text-[10px] text-emerald-700 mb-2 leading-relaxed">
+            Cole os e-mails abaixo, <strong>um por linha</strong>, na mesma ordem da tabela.
+            {' '}Ou use o formato <code className="bg-emerald-100 px-1 rounded">cnes;email</code> para associar pelo CNES.
+          </p>
+          <textarea
+            value={loteText}
+            onChange={e => setLoteText(e.target.value)}
+            placeholder={unidades.slice(0, 3).map(u => `${u.cnes};email@exemplo.com`).join('\n') + '\n...'}
+            className="w-full h-24 px-3 py-2 border border-emerald-300 rounded text-xs font-mono resize-y mb-2"
+            disabled={loteSalvando}
+          />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePreencherLote}
+                disabled={loteSalvando || !loteText.trim()}
+                className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded text-xs font-bold cursor-pointer transition-all disabled:opacity-50"
+              >
+                {loteSalvando ? (
+                  <><div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Salvando...</>
+                ) : (
+                  <><Check size={14} /> Aplicar</>
+                )}
+              </button>
+              <button
+                onClick={() => { setLoteText(''); setLoteResultado(null); }}
+                className="inline-flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 cursor-pointer"
+              >
+                <X size={12} /> Limpar
+              </button>
+            </div>
+            <span className="text-[10px] text-gray-500">
+              {loteText.trim().split('\n').filter(Boolean).length} linha(s) digitada(s)
+            </span>
+          </div>
+
+          {/* Resultado do lote */}
+          {loteResultado && (
+            <div className="mt-2 border-t border-emerald-200 pt-2">
+              <div className="flex items-center gap-2 text-xs font-bold">
+                {loteResultado.erros === 0 ? (
+                  <span className="text-green-700">✅ {loteResultado.sucessos} e-mail(s) salvos com sucesso!</span>
+                ) : (
+                  <span className="text-amber-700">⚠️ {loteResultado.sucessos} salvos, {loteResultado.erros} falha(s)</span>
+                )}
+              </div>
+              {loteResultado.erros > 0 && (
+                <div className="mt-1 max-h-[80px] overflow-y-auto">
+                  {loteResultado.detalhes.filter(d => !d.success).map((d, i) => (
+                    <div key={i} className="text-[10px] text-red-600 flex items-center gap-1">
+                      <span>Linha {d.linha}:</span>
+                      <span className="font-bold">{d.nome}</span>
+                      <span className="text-red-400">— {d.error}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Results */}
       {resultado && (
