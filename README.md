@@ -62,7 +62,7 @@
 - [Configuração Supabase](#-configuração-supabase)
   - [Tabelas do Banco](#tabelas-do-banco)
   - [Autenticação](#autenticação)
-  - [Edge Function — E-mail Resend](#edge-function--e-mail-resend)
+  - [Edge Functions](#edge-functions)
 - [Scripts Disponíveis](#-scripts-disponíveis)
 - [CI/CD Pipeline](#-cicd-pipeline)
 - [Contato](#-desenvolvido-por)
@@ -133,14 +133,13 @@
 |-------|--------|
 | **Múltiplas Lotações** | Visualiza e gerencia profissionais com vínculos em >1 unidade |
 | **CPFs Duplicados** | Identifica e remove vínculos duplicados pelo mesmo CPF |
-| **Unidades sem Cadastro** | Lista unidades órfãs e envia e-mail aos responsáveis |
+| **Unidades sem Cadastro** | Lista unidades órfãs, cadastra/edita/remove e-mails, preenchimento em lote e envia e-mail aos responsáveis |
 | **Detalhes KPI** | Abre lista filtrada ao clicar em qualquer KPI |
 | **Relatórios** | Relatórios consolidados por unidade/período |
 | **Meu Perfil** | Visualize e edite seu nome, veja seu perfil e dados da conta |
 | **Documentação Técnica** | Documentação da integração Zimbra SOAP API disponível no sistema |
 
 ### 🎨 Experiência do Usuário
-- **🌙 Dark Mode** com toggle e persistência em `localStorage`
 - **📱 Responsivo**: Layout adaptável para desktop, tablet e mobile
 - **🔔 Toast de notificações** com 4 tipos (success, error, warning, info)
 - **⚡ Loading Skeleton**: Componente de loading animado para todos os blocos
@@ -194,8 +193,10 @@ monitoramento-cnes/
 ├── requirements.txt                # 🆕 Dependências Python
 ├── supabase/
 │   ├── functions/
-│   │       └── enviar-email-relacionar/
-│       │       └── index.ts           # Edge Function — e-mail Brevo (fallback)
+│   │   ├── enviar-email-relacionar/
+│   │   │   └── index.ts              # Edge Function — e-mail Brevo (fallback)
+│   │   └── list-users/
+│   │       └── index.ts              # Edge Function — lista auth users (service_role)
 │   └── migrations/
 │       ├── 003_add_email_responsavel.sql
 │       └── 004_audit_details.sql   # 🆕 Migration V4
@@ -275,7 +276,7 @@ monitoramento-cnes/
 
 ```
 <Dashboard>
-  ├── Header (logos, usuário, dark mode, sair, status realtime)
+  ├── Header (logos, usuário, sair, status realtime)
   ├── KPICards (12 indicadores clicáveis)
   ├── TodayKPIs (6 indicadores do dia)
   ├── ChartsGrid (4 gráficos — Suspense + lazy loading)
@@ -519,7 +520,8 @@ supabase functions deploy enviar-email-relacionar --no-verify-jwt
 
 O modal **"Unidades sem Cadastro"** no Dashboard permite:
 - Visualizar unidades sem profissionais cadastrados
-- Cadastrar/editar e-mail do responsável
+- Cadastrar/editar/remover e-mail do responsável (com ícone ✏️, cancelar ❌ e lixeira 🗑️)
+- 📋 **Preenchimento em Lote**: cole vários e-mails de uma vez (formato `cnes;email` ou só `email` na ordem)
 - Enviar e-mail individual ou em massa (fallback automático Zimbra → Brevo)
 - Copiar lista de unidades para área de transferência
 
@@ -527,6 +529,28 @@ O modal **"Unidades sem Cadastro"** no Dashboard permite:
 
 ---
 
+### Edge Functions
+
+Criada para resolver o erro **403 "User not allowed"** na Administração de Usuários. O método `supabase.auth.admin.listUsers()` só funciona com a chave `service_role` — não pode ser chamado do navegador.
+
+**Solução:** Edge Function que roda no servidor do Supabase com `service_role`:
+- ✅ Verifica o JWT do usuário logado
+- ✅ Confere se é **admin** na tabela `profiles`
+- ✅ Retorna dados seguros (id, email, created_at, last_sign_in_at)
+- ✅ Fallback silencioso para profiles-only se a função falhar
+
+**Configuração:**
+```bash
+supabase functions deploy list-users --no-verify-jwt --project-ref cptkatdswfyycsgedcte
+```
+
+**Secret necessária no repositório GitHub:**
+```
+SUPABASE_ACCESS_TOKEN=seu-token-de-acesso-supabase
+```
+(Gerado em: https://supabase.com/dashboard/account/tokens)
+
+---
 ## 📜 Scripts Disponíveis
 
 | Comando | Descrição |
@@ -555,10 +579,14 @@ Push na branch main
   └──────┬───────┘
          ↓ (se main)
    [deploy job]
-  ┌──────────────┐
-  │ Vercel       │
-  │ --prod       │
-  └──────────────┘
+  ┌──────────────────────┐
+  │ Supabase Edge Fn's   │
+  │  ├─ list-users       │
+  │  └─ enviar-email     │
+  ├──────────────────────┤
+  │ Vercel               │
+  │ --prod               │
+  └──────────────────────┘
 ```
 
 **Status atual:** [![CI/CD](https://img.shields.io/github/actions/workflow/status/cristianmarquesdevx/monitoramento-cnes/deploy.yml?branch=main)](https://github.com/cristianmarquesdevx/monitoramento-cnes/actions)
