@@ -7,7 +7,7 @@ import LoadingSkeleton from './Skeleton';
 import KPICards from './KPICards';
 import ProfessionalsTable from './ProfessionalsTable';
 import TodayKPIs from './TodayKPIs';
-import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3, UserCircle, Shield, History, Bell, Eye, Trash2, Fingerprint, BookOpen } from 'lucide-react';
+import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3, UserCircle, Shield, History, Bell, Eye, Trash2, Fingerprint, BookOpen, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 const ChartsGrid = lazy(() => import('./ChartsGrid'));
 const ApprovalModal = lazy(() => import('./ApprovalModal'));
@@ -39,6 +39,23 @@ export default function Dashboard({ onNavigate }) {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState(50);
+  const [sortField, setSortField] = useState(null);
+  const [sortDir, setSortDir] = useState('asc');
+
+  const handleSort = useCallback((field) => {
+    setPaginaAtual(1);
+    if (sortField === field) {
+      if (sortDir === 'asc') {
+        setSortDir('desc');
+      } else {
+        setSortField(null);
+        setSortDir('asc');
+      }
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  }, [sortField, sortDir]);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('cnesDark') === 'true');
   const [notificacao, setNotificacao] = useState(null);
   const [periodoFiltro, setPeriodoFiltro] = useState('12');
@@ -141,11 +158,32 @@ export default function Dashboard({ onNavigate }) {
     return lista;
   }, [profissionais, unidadeFiltro, buscaGlobal, filtroEspecialidade, filtroControle, filtroDataInicio, filtroDataFim]);
 
+  // Ordenação
+  const profissionaisOrdenados = useMemo(() => {
+    if (!sortField) return profissionaisFiltrados;
+    const lista = [...profissionaisFiltrados];
+    lista.sort((a, b) => {
+      let valA = a[sortField];
+      let valB = b[sortField];
+      if (valA == null) valA = '';
+      if (valB == null) valB = '';
+      if (sortField === 'carga_horaria') {
+        valA = parseInt(valA) || 0;
+        valB = parseInt(valB) || 0;
+        return sortDir === 'asc' ? valA - valB : valB - valA;
+      }
+      valA = String(valA).toLowerCase();
+      valB = String(valB).toLowerCase();
+      return sortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    });
+    return lista;
+  }, [profissionaisFiltrados, sortField, sortDir]);
+
   // Paginação
-  const totalPaginas = Math.max(1, Math.ceil(profissionaisFiltrados.length / itensPorPagina));
+  const totalPaginas = Math.max(1, Math.ceil(profissionaisOrdenados.length / itensPorPagina));
   const paginaAtualSegura = Math.min(paginaAtual, totalPaginas);
   const inicio = (paginaAtualSegura - 1) * itensPorPagina;
-  const paginaAtualData = profissionaisFiltrados.slice(inicio, inicio + itensPorPagina);
+  const paginaAtualData = profissionaisOrdenados.slice(inicio, inicio + itensPorPagina);
 
   // Unidades sem nenhum profissional cadastrado
   const unidadesSemCadastro = useMemo(() => {
@@ -397,6 +435,22 @@ export default function Dashboard({ onNavigate }) {
   const getCboDesc = (codigo) => listaCBO.find(c => c.codigo === codigo)?.descricao || codigo || '';
   const handleAprovacaoCompleta = () => { setSolicitacaoModal(null); refreshData(); };
 
+  // Nomes amigáveis das colunas para exibição
+  const colunasNomes = {
+    cnes: 'Unidade',
+    nome_profissional: 'Nome',
+    cpf: 'CPF',
+    cns: 'CNS',
+    cbo: 'CBO',
+    conselho: 'Conselho',
+    registro: 'Registro',
+    uf_conselho: 'UF',
+    cargo_funcao: 'Cargo',
+    tipo_vinculo: 'Vínculo',
+    carga_horaria: 'C.H.',
+    setor_equipe: 'Setor'
+  };
+
   return (
     <div className={`min-h-screen ${bgColor} transition-colors duration-300`}>
       {/* Realtime notification toast */}
@@ -593,8 +647,36 @@ export default function Dashboard({ onNavigate }) {
         </div>
       </div>
 
-      <div className="bg-[var(--cor-primaria)] text-white px-3 md:px-4 py-1 font-bold text-xs md:text-sm">2. RELAÇÃO DOS PROFISSIONAIS</div>
-      <ProfessionalsTable profissionaisFiltrados={paginaAtualData} onMarcarConcluido={marcarConcluido} getCboDesc={getCboDesc} paginaAtual={paginaAtualSegura} itensPorPagina={itensPorPagina} />
+      <div className="bg-[var(--cor-primaria)] text-white px-3 md:px-4 py-1 font-bold text-xs md:text-sm flex items-center justify-between gap-2">
+        <span>2. RELAÇÃO DOS PROFISSIONAIS</span>
+        <div className="flex items-center gap-2">
+          {sortField ? (
+            <>
+              <span className="inline-flex items-center gap-1.5 bg-white/15 text-white px-2.5 py-0.5 rounded-full text-[10px] font-semibold border border-white/20">
+                <ArrowUpDown size={11} />
+                <span className="hidden sm:inline">Ordenando por</span>
+                <strong className="underline decoration-dotted underline-offset-2">{colunasNomes[sortField] || sortField}</strong>
+                {sortDir === 'asc' ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
+                <span className="hidden sm:inline ml-0.5">{sortDir === 'asc' ? '(A→Z)' : '(Z→A)'}</span>
+              </span>
+              <button
+                onClick={() => { setSortField(null); setSortDir('asc'); }}
+                className="text-[10px] bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded flex items-center gap-1 cursor-pointer transition-colors hover:scale-105"
+                title="Limpar ordenação"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                <span className="hidden sm:inline">Limpar</span>
+              </button>
+            </>
+          ) : (
+            <span className="text-[10px] text-white/60 font-normal flex items-center gap-1">
+              <ArrowUpDown size={10} />
+              <span className="hidden sm:inline">Clique nos cabeçalhos para ordenar</span>
+            </span>
+          )}
+        </div>
+      </div>
+      <ProfessionalsTable profissionaisFiltrados={paginaAtualData} onMarcarConcluido={marcarConcluido} getCboDesc={getCboDesc} paginaAtual={paginaAtualSegura} itensPorPagina={itensPorPagina} sortField={sortField} sortDir={sortDir} onSort={handleSort} />
 
       {/* Pagination Controls */}
       <div className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-3 ${bgColor} border-t ${borderColor} flex-wrap`}>

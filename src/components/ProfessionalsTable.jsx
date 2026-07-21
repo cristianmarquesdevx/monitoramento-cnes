@@ -7,12 +7,37 @@ function isNovo(createdAt) {
   return Date.now() - new Date(createdAt).getTime() < horas72;
 }
 
+function SortIcon({ field, sortField, sortDir }) {
+  if (sortField !== field) {
+    return <span className="inline-block ml-0.5 opacity-20 group-hover:opacity-60 transition-opacity">↕</span>;
+  }
+  return <span className="inline-block ml-0.5 text-white">{sortDir === 'asc' ? '▲' : '▼'}</span>;
+}
+
+function SortTh({ children, field, sortField, sortDir, onSort }) {
+  return (
+    <th
+      onClick={() => onSort(field)}
+      className={`border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)] cursor-pointer select-none group hover:bg-[var(--cor-primaria)] hover:text-white transition-colors ${sortField === field ? 'bg-[var(--cor-primaria)] text-white' : ''}`}
+      title={`Ordenar por ${children}`}
+    >
+      <span className="inline-flex items-center justify-center">
+        {children}
+        <SortIcon field={field} sortField={sortField} sortDir={sortDir} />
+      </span>
+    </th>
+  );
+}
+
 function ProfessionalsTable({
   profissionaisFiltrados,
   onMarcarConcluido,
   getCboDesc,
   paginaAtual = 1,
-  itensPorPagina = 50
+  itensPorPagina = 50,
+  sortField,
+  sortDir,
+  onSort
 }) {
   return (
     <div className="overflow-x-auto bg-white">
@@ -64,18 +89,18 @@ function ProfessionalsTable({
           <tr className="bg-[var(--cor-primaria-claro)] text-center">
             <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">Controle</th>
             <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">Nº</th>
-            <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">Unidade</th>
-            <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">Nome</th>
-            <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">CPF</th>
-            <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">CNS</th>
-            <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">CBO</th>
-            <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">Conselho</th>
-            <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">Registro</th>
-            <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">UF</th>
-            <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">Cargo</th>
-            <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">Vínculo</th>
-            <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">C.H.</th>
-            <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">Setor</th>
+            <SortTh field="cnes" sortField={sortField} sortDir={sortDir} onSort={onSort}>Unidade</SortTh>
+            <SortTh field="nome_profissional" sortField={sortField} sortDir={sortDir} onSort={onSort}>Nome</SortTh>
+            <SortTh field="cpf" sortField={sortField} sortDir={sortDir} onSort={onSort}>CPF</SortTh>
+            <SortTh field="cns" sortField={sortField} sortDir={sortDir} onSort={onSort}>CNS</SortTh>
+            <SortTh field="cbo" sortField={sortField} sortDir={sortDir} onSort={onSort}>CBO</SortTh>
+            <SortTh field="conselho" sortField={sortField} sortDir={sortDir} onSort={onSort}>Conselho</SortTh>
+            <SortTh field="registro" sortField={sortField} sortDir={sortDir} onSort={onSort}>Registro</SortTh>
+            <SortTh field="uf_conselho" sortField={sortField} sortDir={sortDir} onSort={onSort}>UF</SortTh>
+            <SortTh field="cargo_funcao" sortField={sortField} sortDir={sortDir} onSort={onSort}>Cargo</SortTh>
+            <SortTh field="tipo_vinculo" sortField={sortField} sortDir={sortDir} onSort={onSort}>Vínculo</SortTh>
+            <SortTh field="carga_horaria" sortField={sortField} sortDir={sortDir} onSort={onSort}>C.H.</SortTh>
+            <SortTh field="setor_equipe" sortField={sortField} sortDir={sortDir} onSort={onSort}>Setor</SortTh>
           </tr>
         </thead>
         <tbody>
