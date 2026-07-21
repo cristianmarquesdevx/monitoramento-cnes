@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Modal from './Modal';
 import { supabase } from '../lib/supabase';
 import { useToast } from './Toast';
-import { Mail, Send, AlertTriangle, CheckCircle, Copy } from 'lucide-react';
+import { Mail, Send, AlertTriangle, CheckCircle, Copy, Pencil, X, Trash2 } from 'lucide-react';
 
 // ===== Múltiplos métodos de envio (fallback automático) =====
 const EMAIL_API = '/api/send-email';  // Python SMTP (Vercel)
@@ -63,6 +63,28 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
     } catch (e) {
       toast.error('Erro ao salvar e-mail: ' + e.message);
     }
+  };
+
+  const handleLimparEmail = async (cnes) => {
+    if (!await toast.confirm('Remover o e-mail cadastrado desta unidade?')) return;
+    try {
+      const { error } = await supabase
+        .from('unidades_saude')
+        .update({ email_responsavel: null })
+        .eq('cnes', cnes);
+      if (error) throw error;
+      toast.success('E-mail removido com sucesso!');
+      setEditandoEmail(null);
+      setNovoEmail('');
+      if (onEmailSaved) onEmailSaved();
+    } catch (e) {
+      toast.error('Erro ao remover e-mail: ' + e.message);
+    }
+  };
+
+  const cancelarEdicao = () => {
+    setEditandoEmail(null);
+    setNovoEmail('');
   };
 
   const handleEnviarEmail = async (unidade) => {
@@ -244,24 +266,49 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
                         autoFocus
                         onKeyDown={e => {
                           if (e.key === 'Enter') handleSalvarEmail(u.cnes);
-                          if (e.key === 'Escape') setEditandoEmail(null);
+                          if (e.key === 'Escape') cancelarEdicao();
                         }}
                       />
                       <button
                         onClick={() => handleSalvarEmail(u.cnes)}
-                        className="bg-green-500 hover:bg-green-600 text-white px-1.5 py-1 rounded text-[10px] font-bold cursor-pointer"
+                        className="bg-green-500 hover:bg-green-600 text-white px-1.5 py-1 rounded text-[10px] font-bold cursor-pointer transition-all hover:scale-105"
                       >
                         OK
                       </button>
+                      <button
+                        onClick={cancelarEdicao}
+                        className="bg-gray-200 hover:bg-gray-300 text-gray-600 p-1 rounded text-[10px] font-bold cursor-pointer transition-all hover:scale-105"
+                        title="Cancelar"
+                      >
+                        <X size={12} />
+                      </button>
+                      {u.email_responsavel && (
+                        <button
+                          onClick={() => handleLimparEmail(u.cnes)}
+                          className="bg-red-100 hover:bg-red-200 text-red-600 p-1 rounded text-[10px] font-bold cursor-pointer transition-all hover:scale-105"
+                          title="Remover e-mail"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
                     </div>
                   ) : (
-                    <span
-                      className={`cursor-pointer ${u.email_responsavel ? 'text-blue-600 underline' : 'text-gray-400 italic'}`}
-                      onClick={() => { setEditandoEmail(u.cnes); setNovoEmail(u.email_responsavel || ''); }}
-                      title="Clique para editar"
-                    >
-                      {u.email_responsavel || 'Adicionar e-mail'}
-                    </span>
+                    <div className="flex items-center justify-center gap-1.5">
+                      <span
+                        className={`cursor-pointer ${u.email_responsavel ? 'text-blue-600 underline hover:text-blue-800' : 'text-gray-400 italic hover:text-gray-600'}`}
+                        onClick={() => { setEditandoEmail(u.cnes); setNovoEmail(u.email_responsavel || ''); }}
+                        title="Clique para editar"
+                      >
+                        {u.email_responsavel || 'Adicionar e-mail'}
+                      </span>
+                      <button
+                        onClick={() => { setEditandoEmail(u.cnes); setNovoEmail(u.email_responsavel || ''); }}
+                        className="text-gray-400 hover:text-[var(--cor-primaria)] p-0.5 rounded cursor-pointer transition-all hover:scale-110"
+                        title="Editar e-mail"
+                      >
+                        <Pencil size={11} />
+                      </button>
+                    </div>
                   )}
                 </td>
                 <td className="border border-gray-200 px-2 py-1.5 text-center">
