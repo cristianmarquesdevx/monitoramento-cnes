@@ -97,6 +97,18 @@ export default function ApprovalModal({ isOpen, onClose, solicitacao, unidades, 
     }
   };
 
+  function construirDetalhesAlteracao() {
+    const campos = [];
+    CAMPOS.forEach(campo => {
+      const de = antigos[campo.key];
+      const para = editData[campo.key];
+      if ((de || '') !== (para || '')) {
+        campos.push({ nome: campo.key, label: campo.label, de: de || '', para: para || '' });
+      }
+    });
+    return campos.length > 0 ? { campos } : null;
+  }
+
   const handleConfirmar = async () => {
     if (sol.tipo === 'delete') {
       if (!window.confirm(`EXCLUIR "${nomeProf}"?`)) return;
@@ -121,7 +133,15 @@ export default function ApprovalModal({ isOpen, onClose, solicitacao, unidades, 
     try {
       await supabase.from('profissionais').update(editData).eq('id', sol.profissional_id);
       await supabase.from('solicitacoes').update({ status: 'aprovado', aprovado_em: new Date().toISOString() }).eq('id', sol.id);
-      await logAudit('approve', `Aprovou alteração de "${nomeProf}"`);
+
+      // Descrição rica com campos alterados embutidos
+      const detalhes = construirDetalhesAlteracao();
+      const qtdCampos = detalhes?.campos?.length || 0;
+      // Embutir JSON dos detalhes na descrição para o AuditLog conseguir expandir
+      const detalhesStr = detalhes ? '|||' + JSON.stringify(detalhes) + '|||' : '';
+      const descricao = `Aprovou alteração de "${nomeProf}" — ${qtdCampos} campo(s) alterado(s)` + detalhesStr;
+      await logAudit('approve', descricao);
+
       alert('✅ Alteração aprovada.');
       onComplete?.();
       onClose();

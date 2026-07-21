@@ -65,6 +65,20 @@ export function AuthProvider({ children }) {
   const signIn = useCallback(async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+
+    // Registrar login na auditoria (fire-and-forget)
+    try {
+      const nome = profile?.nome || data.user?.user_metadata?.nome || data.user?.email?.split('@')[0] || 'Usuário';
+      supabase.rpc('log_audit', {
+        p_usuario_id: data.user.id,
+        p_usuario_nome: nome,
+        p_acao: 'login',
+        p_tipo: 'sessao',
+        p_target_id: data.user.id,
+        p_descricao: 'Fez login no sistema'
+      }).catch(() => {});
+    } catch {}
+
     return data;
   }, []);
 

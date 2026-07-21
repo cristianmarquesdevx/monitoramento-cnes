@@ -18,6 +18,7 @@ const MultiLotacaoModal = lazy(() => import('./MultiLotacaoModal'));
 const DuplicadosModal = lazy(() => import('./DuplicadosModal'));
 const UnidadesSemCadastroModal = lazy(() => import('./UnidadesSemCadastroModal'));
 const DocumentationModal = lazy(() => import('./DocumentationModal'));
+const ProfileModal = lazy(() => import('./ProfileModal'));
 
 export default function Dashboard({ onNavigate }) {
   const { unidades, profissionais, solicitacoes, loading, refreshData, recarregar, setProfissionais } = useData();
@@ -35,6 +36,7 @@ export default function Dashboard({ onNavigate }) {
   const [duplicadosModalOpen, setDuplicadosModalOpen] = useState(false);
   const [unidadesSemCadastroModalOpen, setUnidadesSemCadastroModalOpen] = useState(false);
   const [documentacaoModalOpen, setDocumentacaoModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState(50);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('cnesDark') === 'true');
@@ -238,13 +240,17 @@ export default function Dashboard({ onNavigate }) {
     // Auditoria separada — erro não afeta o checkbox
     if (concluido) {
       try {
+        const prof = profissionais.find(p => p.id === id);
+        const nomeProf = prof?.nome_profissional || `ID ${id}`;
+        const unidadeNome = unidades.find(u => u.cnes === prof?.cnes)?.nome_unidade || '';
+        const descricao = `Marcou "${nomeProf}"${unidadeNome ? ` (${unidadeNome})` : ''} como concluído`;
         await supabase.rpc('log_audit', {
           p_usuario_id: user.id,
           p_usuario_nome: nomeUsuario,
           p_acao: 'controle',
           p_tipo: 'profissional',
           p_target_id: String(id),
-          p_descricao: `Marcou profissional ${id} como concluído`
+          p_descricao: descricao
         });
       } catch (e) {
         console.error('Erro ao registrar auditoria (não crítico):', e.message);
@@ -281,6 +287,17 @@ export default function Dashboard({ onNavigate }) {
     const rows = profissionaisFiltrados.map(p => [p.nome_profissional, p.cpf, p.cns, p.cbo, p.conselho, p.registro, p.uf_conselho, p.cargo_funcao, p.tipo_vinculo, p.carga_horaria, p.setor_equipe, unidades.find(u => u.cnes === p.cnes)?.nome_unidade || p.cnes].map(v => `"${v || ''}"`).join(','));
     const blob = new Blob([headers.join(',') + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'profissionais.csv'; link.click();
+    URL.revokeObjectURL(link.href);
+
+    // Auditar exportação (fire-and-forget)
+    supabase.rpc('log_audit', {
+      p_usuario_id: user.id,
+      p_usuario_nome: nomeUsuario,
+      p_acao: 'export',
+      p_tipo: 'csv',
+      p_target_id: '',
+      p_descricao: `Exportou CSV com ${profissionaisFiltrados.length} profissionais`
+    }).catch(() => {});
   };
 
   // Charts data with period filter
@@ -399,8 +416,8 @@ export default function Dashboard({ onNavigate }) {
         </div>
         <div className={`flex flex-wrap items-center justify-center md:justify-between px-3 md:px-4 py-2 border-t ${borderColor} text-[clamp(10px,1.6vw,13px)] gap-2 transition-colors`}>
           <div className="flex items-center gap-2 text-xs md:text-sm">
-            <UserCircle size={16} className="text-[var(--cor-primaria)]" />
-            <span className={`font-semibold ${textColor} truncate max-w-[100px] md:max-w-[160px]`}>{nomeUsuario}</span>
+            <UserCircle size={16} className="text-[var(--cor-primaria)] cursor-pointer hover:opacity-70" onClick={() => setProfileModalOpen(true)} />
+            <span className={`font-semibold ${textColor} truncate max-w-[100px] md:max-w-[160px] cursor-pointer hover:text-[var(--cor-primaria)]`} onClick={() => setProfileModalOpen(true)}>{nomeUsuario}</span>
             <span className="text-gray-400 hidden sm:inline">&bull;</span>
             <span className={`${mutedText} hidden sm:inline text-[11px] truncate max-w-[80px] md:max-w-none`}>{emailUsuario}</span>
             {roleLabel && <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${roleColor}`}>{roleLabel}</span>}
@@ -692,6 +709,12 @@ export default function Dashboard({ onNavigate }) {
           <DocumentationModal
             isOpen={documentacaoModalOpen}
             onClose={() => setDocumentacaoModalOpen(false)}
+          />
+        </Suspense>
+        <Suspense fallback={null}>
+          <ProfileModal
+            isOpen={profileModalOpen}
+            onClose={() => setProfileModalOpen(false)}
           />
         </Suspense>
     </div>
