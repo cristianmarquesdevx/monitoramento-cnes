@@ -1,3 +1,5 @@
+import React from 'react';
+
 const AVATAR_COLORS = [
   '#003c7d', '#28a745', '#dc3545', '#ffc107', '#17a2b8',
   '#6f42c1', '#fd7e14', '#20c997', '#e83e8c', '#0056a8'
@@ -10,12 +12,30 @@ function getInitials(nome) {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
-export default function Avatar({ nome, size = 28 }) {
+export default function Avatar({ nome, size = 28, avatarUrl }) {
   const iniciais = getInitials(nome);
   const colorIndex = nome
     ? nome.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % AVATAR_COLORS.length
     : 0;
 
+  // Estado para controlar fallback se a imagem quebrar
+  const [imgError, setImgError] = React.useState(false);
+
+  // Se tiver avatarUrl e não tiver errado, exibe a foto
+  if (avatarUrl && !imgError) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={nome || 'Avatar'}
+        className="rounded-full shrink-0 object-cover"
+        style={{ width: size, height: size }}
+        title={nome}
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+
+  // Fallback: iniciais coloridas
   return (
     <div
       className="rounded-full flex items-center justify-center font-bold text-white shrink-0"

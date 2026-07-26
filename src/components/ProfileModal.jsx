@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import Modal from './Modal';
-import { UserCircle, Save, Mail, Shield, Calendar, Phone, Building2 } from 'lucide-react';
+import { UserCircle, Save, Mail, Shield, Calendar, Camera } from 'lucide-react';
 
 const ROLE_CONFIG = {
   admin: { label: 'Administrador', color: 'bg-purple-100 text-purple-700 border-purple-300' },
@@ -19,15 +19,50 @@ function getInitials(nome) {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
+/** Redimensiona imagem para no máximo 200x200 e retorna data URL base64 */
+function resizeImage(file, maxDim = 200) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          const ratio = Math.min(maxDim / w, maxDim / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function ProfileModal({ isOpen, onClose }) {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile } = useAuth();
   const [editando, setEditando] = useState(false);
   const [nome, setNome] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const prevProfileRef = useRef(null);
 
+  // Sincroniza com o profile quando ele muda
   useEffect(() => {
-    if (profile) setNome(profile.nome || '');
+    if (profile && profile !== prevProfileRef.current) {
+      prevProfileRef.current = profile;
+      setNome(profile.nome || '');
+      setAvatarUrl(profile.avatar_url || '');
+    }
   }, [profile]);
 
   const handleSalvar = async () => {
@@ -42,12 +77,58 @@ export default function ProfileModal({ isOpen, onClose }) {
       if (error) throw error;
       setMensagem('✅ Nome atualizado com sucesso!');
       setEditando(false);
-      // Recarrega a página para atualizar o nome no header
       setTimeout(() => window.location.reload(), 1500);
     } catch (e) {
       setMensagem('❌ Erro: ' + e.message);
     } finally {
       setSalvando(false);
+    }
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setMensagem('❌ Selecione uma imagem válida.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setMensagem('❌ A imagem deve ter no máximo 2MB.');
+      return;
+    }
+
+    setUploading(true);
+    setMensagem('');
+    try {
+      // Redimensiona para evitar data URLs gigantes
+      const dataUrl = await resizeImage(file, 200);
+      // Salva no profile
+      const { error } = await supabase.from('profiles').update({ avatar_url: dataUrl }).eq('id', user.id);
+      if (error) throw error;
+      setAvatarUrl(dataUrl);
+      setMensagem('✅ Foto atualizada com sucesso!');
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (e) {
+      setMensagem('❌ Erro ao salvar foto: ' + e.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!avatarUrl) return;
+    setUploading(true);
+    try {
+      const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', user.id);
+      if (error) throw error;
+      setAvatarUrl('');
+      setMensagem('✅ Foto removida.');
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (e) {
+      setMensagem('❌ Erro: ' + e.message);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -59,13 +140,53 @@ export default function ProfileModal({ isOpen, onClose }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="👤 Meu Perfil" maxWidth="max-w-[500px]">
       <div className="flex flex-col items-center py-4">
-        {/* Avatar grande */}
-        <div
-          className="w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-2xl mb-3 shadow-lg"
-          style={{ background: avatarColor }}
-        >
-          {getInitials(nome || profile?.nome || user?.email)}
+        {/* Avatar com upload */}
+        <div className="relative mb-3 group">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt="Avatar"
+              className="w-20 h-20 rounded-full object-cover shadow-lg border-2 border-gray-200"
+            />
+          ) : (
+            <div
+              className="w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg border-2 border-gray-200"
+              style={{ background: avatarColor }}
+            >
+              {getInitials(nome || profile?.nome || user?.email)}
+            </div>
+          )}
+          {/* Botão de câmera sobre o avatar */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[var(--cor-primaria)] text-white flex items-center justify-center shadow-md hover:bg-[var(--cor-primaria-hover)] transition-all cursor-pointer disabled:opacity-50"
+            title="Alterar foto"
+          >
+            <Camera size={12} />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handlePhotoUpload}
+          />
+          {uploading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full">
+              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
         </div>
+
+        {avatarUrl && (
+          <button
+            onClick={handleRemovePhoto}
+            className="text-[10px] text-red-500 hover:text-red-700 underline mb-2 cursor-pointer"
+          >
+            Remover foto
+          </button>
+        )}
 
         {/* Info cards */}
         <div className="w-full space-y-3 mt-2">
@@ -137,7 +258,11 @@ export default function ProfileModal({ isOpen, onClose }) {
 
         {/* Mensagem de feedback */}
         {mensagem && (
-          <div className="mt-3 text-sm font-bold text-center w-full bg-gray-50 py-2 rounded-lg border border-gray-200">
+          <div className={`mt-3 text-sm font-bold text-center w-full py-2 rounded-lg border ${
+            mensagem.startsWith('✅') ? 'bg-green-50 border-green-200 text-green-700' :
+            mensagem.startsWith('❌') ? 'bg-red-50 border-red-200 text-red-700' :
+            'bg-gray-50 border-gray-200 text-gray-700'
+          }`}>
             {mensagem}
           </div>
         )}

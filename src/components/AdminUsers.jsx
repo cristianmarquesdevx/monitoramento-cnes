@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import {
   Shield, ShieldCheck, Eye, ArrowLeft, Search, RefreshCw,
-  Filter, AlertTriangle, CheckCircle2
+  Filter, AlertTriangle, CheckCircle2, UserPlus, X, Mail, Lock,
+  User
 } from 'lucide-react';
 import Avatar from './Avatar';
 
@@ -23,6 +24,9 @@ export default function AdminUsers({ onBack }) {
   const [salvando, setSalvando] = useState(false);
   const [confirmando, setConfirmando] = useState(null); // { userId, novaRole, nome }
   const [mensagem, setMensagem] = useState('');
+  const [novoUsuarioOpen, setNovoUsuarioOpen] = useState(false);
+  const [novoUserForm, setNovoUserForm] = useState({ email: '', password: '', nome: '', role: 'viewer' });
+  const [criandoUser, setCriandoUser] = useState(false);
 
   useEffect(() => { carregarUsuarios(); }, []);
 
@@ -126,6 +130,36 @@ export default function AdminUsers({ onBack }) {
     }
   }
 
+  async function criarUsuario() {
+    const { email, password, nome, role } = novoUserForm;
+    if (!email || !password) {
+      setMensagem('❌ E-mail e senha são obrigatórios.');
+      return;
+    }
+    if (password.length < 6) {
+      setMensagem('❌ A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+    setCriandoUser(true);
+    setMensagem('');
+    try {
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: { email, password, nome: nome || email.split('@')[0], role }
+      });
+      if (error) throw new Error(error.message || 'Erro ao criar usuário');
+      if (data?.error) throw new Error(data.error);
+      setMensagem(`✅ Usuário "${nome || email}" criado com sucesso!`);
+      setNovoUsuarioOpen(false);
+      setNovoUserForm({ email: '', password: '', nome: '', role: 'viewer' });
+      carregarUsuarios();
+      setTimeout(() => setMensagem(''), 4000);
+    } catch (e) {
+      setMensagem('❌ Erro ao criar usuário: ' + e.message);
+    } finally {
+      setCriandoUser(false);
+    }
+  }
+
   async function salvarNome(userId, nome) {
     try {
       const { error } = await supabase.from('profiles').upsert({ id: userId, nome }).eq('id', userId);
@@ -162,6 +196,9 @@ export default function AdminUsers({ onBack }) {
           <Shield size={20} /> Administração de Usuários
         </h1>
         <div className="flex-1" />
+        <button onClick={() => setNovoUsuarioOpen(true)} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer hover:scale-105">
+          <UserPlus size={14} /> Novo Usuário
+        </button>
         <button onClick={carregarUsuarios} className="p-2 hover:bg-gray-100 rounded-full cursor-pointer" title="Recarregar">
           <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
         </button>
@@ -199,6 +236,80 @@ export default function AdminUsers({ onBack }) {
             'bg-blue-50 border-blue-200 text-blue-700'
           }`}>
             {mensagem}
+          </div>
+        )}
+
+        {/* Modal de Novo Usuário */}
+        {novoUsuarioOpen && (
+          <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 p-4"
+            onClick={() => setNovoUsuarioOpen(false)}>
+            <div className="bg-white rounded-lg p-5 max-w-md w-full border-2 border-green-300 shadow-xl"
+              onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <UserPlus size={20} className="text-green-600" />
+                  <h3 className="font-bold text-gray-800">Novo Usuário</h3>
+                </div>
+                <button onClick={() => setNovoUsuarioOpen(false)}
+                  className="p-1 hover:bg-gray-100 rounded cursor-pointer">
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-600 flex items-center gap-1 mb-1">
+                    <User size={12} /> Nome
+                  </label>
+                  <input type="text" value={novoUserForm.nome}
+                    onChange={e => setNovoUserForm(p => ({ ...p, nome: e.target.value }))}
+                    placeholder="Nome completo"
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-600 flex items-center gap-1 mb-1">
+                    <Mail size={12} /> E-mail *
+                  </label>
+                  <input type="email" value={novoUserForm.email}
+                    onChange={e => setNovoUserForm(p => ({ ...p, email: e.target.value }))}
+                    placeholder="email@exemplo.com" required
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-600 flex items-center gap-1 mb-1">
+                    <Lock size={12} /> Senha *
+                  </label>
+                  <input type="password" value={novoUserForm.password}
+                    onChange={e => setNovoUserForm(p => ({ ...p, password: e.target.value }))}
+                    placeholder="Mínimo 6 caracteres" required minLength={6}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-600 flex items-center gap-1 mb-1">
+                    <Shield size={12} /> Perfil de Acesso
+                  </label>
+                  <select value={novoUserForm.role}
+                    onChange={e => setNovoUserForm(p => ({ ...p, role: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm bg-white cursor-pointer">
+                    {Object.entries(ROLE_CONFIG).map(([key, config]) => (
+                      <option key={key} value={key}>{config.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <button onClick={() => setNovoUsuarioOpen(false)}
+                  className="px-4 py-2 rounded text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer">
+                  Cancelar
+                </button>
+                <button onClick={criarUsuario} disabled={criandoUser}
+                  className="px-4 py-2 rounded text-sm font-bold text-white bg-green-600 hover:bg-green-700 cursor-pointer disabled:opacity-50 flex items-center gap-1">
+                  {criandoUser ? (
+                    <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : <CheckCircle2 size={14} />}
+                  {criandoUser ? 'Criando...' : 'Criar Usuário'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

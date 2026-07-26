@@ -53,6 +53,7 @@ jobs:
         run: |
           supabase functions deploy list-users --no-verify-jwt --project-ref cptkatdswfyycsgedcte
           supabase functions deploy enviar-email-relacionar --no-verify-jwt --project-ref cptkatdswfyycsgedcte
+          supabase functions deploy create-user --no-verify-jwt --project-ref cptkatdswfyycsgedcte
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       

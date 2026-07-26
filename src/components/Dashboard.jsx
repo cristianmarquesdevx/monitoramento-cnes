@@ -7,7 +7,8 @@ import LoadingSkeleton from './Skeleton';
 import KPICards from './KPICards';
 import ProfessionalsTable from './ProfessionalsTable';
 import TodayKPIs from './TodayKPIs';
-import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3, UserCircle, Shield, History, Bell, Eye, Trash2, Fingerprint, BookOpen, ArrowUpDown, ArrowUp, ArrowDown, Sun, Moon } from 'lucide-react';
+import { Users, AlertTriangle, Clock, Download, FileText, Search, LogOut, CheckCheck, RefreshCw, BarChart3, Shield, History, Bell, Eye, Trash2, Fingerprint, BookOpen, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import Avatar from './Avatar';
 
 const ChartsGrid = lazy(() => import('./ChartsGrid'));
 const ApprovalModal = lazy(() => import('./ApprovalModal'));
@@ -490,7 +491,9 @@ export default function Dashboard({ onNavigate }) {
         </div>
         <div className={`flex flex-wrap items-center justify-center md:justify-between px-3 md:px-4 py-2 border-t ${borderColor} text-[clamp(10px,1.6vw,13px)] gap-2 transition-colors`}>
           <div className="flex items-center gap-2 text-xs md:text-sm">
-            <UserCircle size={16} className="text-[var(--cor-primaria)] cursor-pointer hover:opacity-70" onClick={() => setProfileModalOpen(true)} />
+            <div className="cursor-pointer" onClick={() => setProfileModalOpen(true)}>
+              <Avatar nome={nomeUsuario} size={22} avatarUrl={profile?.avatar_url} />
+            </div>
             <span className={`font-semibold ${textColor} truncate max-w-[100px] md:max-w-[160px] cursor-pointer hover:text-[var(--cor-primaria)]`} onClick={() => setProfileModalOpen(true)}>{nomeUsuario}</span>
             <span className="text-gray-400 hidden sm:inline">&bull;</span>
             <span className={`${mutedText} hidden sm:inline text-[11px] truncate max-w-[80px] md:max-w-none`}>{emailUsuario}</span>
@@ -546,9 +549,16 @@ export default function Dashboard({ onNavigate }) {
         </div>
 
         {multiLotacao.length > 0 && (
-          <div className={`${cardBg} rounded-md p-2.5 border ${borderColor} mb-2 max-h-[200px] overflow-y-auto`}>
-            <div className="flex items-center justify-between mb-1">
-              <h5 className={`text-xs font-bold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}><Users size={12} className="inline mr-1" /> Profissionais com múltiplas lotações</h5>
+          <div className={`${cardBg} rounded-md p-2.5 border ${borderColor} mb-2`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h5 className={`text-xs font-bold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <Users size={12} className="inline mr-1" /> Múltiplas Lotações
+                </h5>
+                <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-200">
+                  {multiLotacao.length} profissional(is)
+                </span>
+              </div>
               <button
                 onClick={() => setMultiLotacaoModalOpen(true)}
                 className="inline-flex items-center gap-1 bg-[var(--cor-primaria)] hover:bg-[var(--cor-primaria-hover)] text-white px-2.5 py-1 rounded text-[10px] font-bold transition-all cursor-pointer hover:scale-105 shadow-sm"
@@ -558,12 +568,6 @@ export default function Dashboard({ onNavigate }) {
                 Ver Detalhes
               </button>
             </div>
-            <ul className="space-y-0.5">{multiLotacao.map((p, i) => (
-              <li key={i} className={`flex justify-between text-xs py-0.5 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-                <span className={textColor}>{p.nome}</span>
-                <span className="bg-[var(--cor-primaria)] text-white px-2 py-0.5 rounded-full text-[10px]">{p.unidades.size} unidades</span>
-              </li>
-            ))}</ul>
           </div>
         )}
 
