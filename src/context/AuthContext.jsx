@@ -89,7 +89,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const isAdmin = profile?.role === 'admin';
-  const isEditor = profile?.role === 'editor' || profile?.role === 'admin';
+  // isEditor segue o admin — apenas administradores podem modificar dados
+  const isEditor = profile?.role === 'admin';
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, signIn, signOut, isAdmin, isEditor }}>
