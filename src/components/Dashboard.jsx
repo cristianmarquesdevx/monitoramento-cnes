@@ -23,7 +23,7 @@ const ProfileModal = lazy(() => import('./ProfileModal'));
 
 export default function Dashboard({ onNavigate }) {
   const { unidades, profissionais, solicitacoes, loading, refreshData, recarregar, setProfissionais } = useData();
-  const { user, profile, signOut, isEditor, isAdmin } = useAuth();
+  const { user, profile, signOut, isAdmin, canManageSolicitacoes } = useAuth();
   const [unidadeFiltro, setUnidadeFiltro] = useState('__todos__');
   const [buscaUnidade, setBuscaUnidade] = useState('');
   const [buscaGlobal, setBuscaGlobal] = useState('');
@@ -520,6 +520,25 @@ export default function Dashboard({ onNavigate }) {
         </div>
       </div>
 
+      {/* Read-only / limited access banner for non-admin users */}
+      {!isAdmin && (
+        <div className={`px-3 md:px-4 py-2 bg-gradient-to-r border-b-2 ${darkMode ? 'from-amber-900/40 to-yellow-900/40 border-amber-700' : 'from-amber-50 to-yellow-50 border-amber-300'}`}>
+          <div className="flex items-center gap-2.5 text-xs md:text-sm flex-wrap">
+            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full shrink-0 ${darkMode ? 'bg-amber-800/60 text-amber-300' : 'bg-amber-200 text-amber-700'}`}>
+              <Eye size={14} />
+            </span>
+            <span className={`font-semibold ${darkMode ? 'text-amber-200' : 'text-amber-800'}`}>
+              {profile?.role === 'editor'
+                ? '🔍 Acesso limitado — Você pode gerenciar solicitações, mas apenas administradores podem modificar dados cadastrais.'
+                : '🔍 Modo somente leitura — Você está visualizando os dados. Apenas administradores podem fazer alterações.'}
+            </span>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${roleColor}`}>
+              {roleLabel}
+            </span>
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="bg-gray-50 px-3 md:px-4 py-3 border-b-2 border-[var(--cor-primaria)]"><LoadingSkeleton /></div>
       ) : (
@@ -599,8 +618,8 @@ export default function Dashboard({ onNavigate }) {
                 <div key={sol.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs py-1.5 border-b border-gray-100 gap-1">
                   <span className="flex-1"><strong>{sol.tipo === 'update' ? 'Alteração' : 'Exclusão'}</strong> - {prof?.nome_profissional || sol.dados_antigos?.nome_profissional || `ID ${sol.profissional_id}`} <span className="text-gray-500">{new Date(sol.criado_em).toLocaleString()}</span></span>
                   <div className="flex gap-1 self-end sm:self-auto">
-                    {isEditor ? (<><button onClick={() => setSolicitacaoModal(sol)} className="bg-green-500 hover:bg-green-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Aprovar</button>
-                    <button onClick={async () => { if (window.confirm(`Rejeitar?`)) { await supabase.from('solicitacoes').update({ status: 'rejeitado' }).eq('id', sol.id); refreshData(); } }} className="bg-red-500 hover:bg-red-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Rejeitar</button></>) : (<span className="text-gray-400 text-[10px] italic">Apenas administrador</span>)}
+                    {canManageSolicitacoes ? (<><button onClick={() => setSolicitacaoModal(sol)} className="bg-green-500 hover:bg-green-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Aprovar</button>
+                    <button onClick={async () => { if (window.confirm(`Rejeitar?`)) { await supabase.from('solicitacoes').update({ status: 'rejeitado' }).eq('id', sol.id); refreshData(); } }} className="bg-red-500 hover:bg-red-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Rejeitar</button></>) : (<span className="text-gray-400 text-[10px] italic">Apenas administrador ou editor</span>)}
                   </div>
                 </div>
               );

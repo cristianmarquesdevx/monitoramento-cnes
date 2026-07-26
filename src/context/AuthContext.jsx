@@ -89,11 +89,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   const isAdmin = profile?.role === 'admin';
-  // isEditor segue o admin — apenas administradores podem modificar dados
-  const isEditor = profile?.role === 'admin';
+  const isEditor = profile?.role === 'editor' || profile?.role === 'admin';
+
+  // Permissões granulares
+  // Admin: tudo | Editor: apenas aprovar/rejeitar solicitações | Viewer: só visualização
+  const canManageSolicitacoes = profile?.role === 'editor' || profile?.role === 'admin';
+  const canManageCadastro = profile?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signOut, isAdmin, isEditor }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signOut, isAdmin, isEditor, canManageSolicitacoes, canManageCadastro }}>
       {children}
     </AuthContext.Provider>
   );
