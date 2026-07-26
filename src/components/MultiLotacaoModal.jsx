@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { Building2, User, Trash2, AlertTriangle, MapPin, Briefcase, Clock, CheckCircle, Eye } from 'lucide-react';
 
 export default function MultiLotacaoModal({ isOpen, onClose, multiLotacaoData, unidades, profissionais, onComplete }) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const toast = useToast();
   const [processando, setProcessando] = useState(null);
   const [expandido, setExpandido] = useState(null);
@@ -149,6 +149,7 @@ export default function MultiLotacaoModal({ isOpen, onClose, multiLotacaoData, u
                               <span>{prof.setor_equipe || '—'}</span>
                             </div>
                           </div>
+                          {isAdmin ? (
                           <button
                             onClick={() => handleExcluirVinculo(prof)}
                             disabled={isProcessando || !podeExcluir}
@@ -168,6 +169,7 @@ export default function MultiLotacaoModal({ isOpen, onClose, multiLotacaoData, u
                             )}
                             {isProcessando ? 'Excluindo...' : 'Excluir vínculo'}
                           </button>
+                          ) : null}
                         </div>
                       );
                     })}

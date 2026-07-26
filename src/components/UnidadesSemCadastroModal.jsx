@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Modal from './Modal';
 import { supabase } from '../lib/supabase';
 import { useToast } from './Toast';
+import { useAuth } from '../context/AuthContext';
 import { Mail, Send, AlertTriangle, CheckCircle, Copy, Pencil, X, Trash2, ClipboardList, Check } from 'lucide-react';
 
 // ===== Validação de e-mail =====
@@ -86,6 +87,7 @@ async function enviarComFallback(payload) {
 
 export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, todasUnidades, onEmailSaved }) {
   const toast = useToast();
+  const { isAdmin } = useAuth();
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [editandoEmail, setEditandoEmail] = useState(null);
@@ -351,7 +353,8 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
         </div>
       </div>
 
-      {/* Action buttons */}
+      {/* Action buttons — apenas admin */}
+      {isAdmin && (
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <button
           onClick={handleEnviarTodos}
@@ -379,8 +382,8 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
           <ClipboardList size={14} />
           Preencher em Lote
         </button>
-
       </div>
+      )}
 
       {/* Painel de preenchimento em lote */}
       {showLote && (
@@ -489,6 +492,7 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
           <div key={u.cnes} className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <span className="font-bold text-xs text-gray-400">#{i + 1}</span>
+              {isAdmin && (
               <button
                 onClick={() => handleEnviarEmail(u)}
                 disabled={enviando || !u.email_responsavel}
@@ -501,6 +505,7 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
                 <Mail size={10} />
                 Enviar
               </button>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs mb-2">
               <div><span className="text-gray-500">CNES:</span> <span className="font-bold">{u.cnes}</span></div>
@@ -508,7 +513,7 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
               <div className="col-span-2"><span className="text-gray-500">Responsável:</span> <span className="font-bold">{u.responsavel || <span className="text-gray-400 italic">Não informado</span>}</span></div>
             </div>
             <div className="border-t border-gray-100 pt-2">
-              {editandoEmail === u.cnes ? (
+              {isAdmin && editandoEmail === u.cnes ? (
                 <div className="flex items-center gap-1 flex-wrap">
                   <input
                     type="email"
@@ -543,7 +548,7 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
                     </button>
                   )}
                 </div>
-              ) : (
+              ) : isAdmin ? (
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs text-gray-500">E-mail:</span>
                   <span
@@ -561,6 +566,11 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
                     <Pencil size={12} />
                   </button>
                 </div>
+              ) : (
+                <div className="text-xs text-gray-500">
+                  <span className="text-gray-400">E-mail: </span>
+                  <span>{u.email_responsavel || '—'}</span>
+                </div>
               )}
             </div>
           </div>
@@ -577,13 +587,13 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
               <th className="border border-gray-300 px-2 py-2">Unidade</th>
               <th className="border border-gray-300 px-2 py-2">Responsável</th>
               <th className="border border-gray-300 px-2 py-2">E-mail</th>
-              <th className="border border-gray-300 px-2 py-2 w-[120px]">Ações</th>
+              {isAdmin ? <th className="border border-gray-300 px-2 py-2 w-[120px]">Ações</th> : null}
             </tr>
           </thead>
           <tbody>
             {(!unidades || unidades.length === 0) ? (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-gray-400">
+                <td colSpan={isAdmin ? 6 : 5} className="text-center py-8 text-gray-400">
                   <AlertTriangle size={24} className="inline mb-1 text-green-500" />
                   <div className="font-semibold text-green-600">Todas as unidades possuem profissionais cadastrados!</div>
                   <div className="text-xs text-gray-500 mt-1">Nenhuma unidade órfã encontrada.</div>
@@ -600,7 +610,7 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
                   )}
                 </td>
                 <td className="border border-gray-200 px-2 py-1.5 text-center text-xs">
-                  {editandoEmail === u.cnes ? (
+                  {isAdmin && editandoEmail === u.cnes ? (
                     <div className="flex items-center gap-1">
                       <input
                         type="email"
@@ -637,7 +647,7 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
                         </button>
                       )}
                     </div>
-                  ) : (
+                  ) : isAdmin ? (
                     <div className="flex items-center justify-center gap-1.5">
                       <span
                         className={`cursor-pointer ${u.email_responsavel ? 'text-blue-600 underline hover:text-blue-800' : 'text-gray-400 italic hover:text-gray-600'}`}
@@ -654,8 +664,11 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
                         <Pencil size={11} />
                       </button>
                     </div>
+                  ) : (
+                    <span className="text-gray-600">{u.email_responsavel || '—'}</span>
                   )}
                 </td>
+                {isAdmin && (
                 <td className="border border-gray-200 px-2 py-1.5 text-center">
                   <button
                     onClick={() => handleEnviarEmail(u)}
@@ -671,6 +684,7 @@ export default function UnidadesSemCadastroModal({ isOpen, onClose, unidades, to
                     Enviar
                   </button>
                 </td>
+                )}
               </tr>
             ))}
           </tbody>

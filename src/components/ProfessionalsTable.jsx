@@ -66,7 +66,8 @@ function ProfessionalsTable({
   paginaAtual,
   itensPorPagina,
   sortFields,
-  onSort
+  onSort,
+  isAdmin
 }) {
   const selectId = useId();
   paginaAtual = paginaAtual || 1;
@@ -160,12 +161,14 @@ function ProfessionalsTable({
                     </span>
                   ) : null}
                 </div>
+                {isAdmin ? (
                 <input
                   type="checkbox"
                   checked={!!p.controle_feito}
                   onChange={function (e) { onMarcarConcluido(p.id, e.target.checked); }}
                   className="w-6 h-6 cursor-pointer min-w-[24px]"
                 />
+                ) : null}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
                 <div><span className="text-gray-500">{'Nome:'}</span> <span className="font-bold">{p.nome_profissional || '\u2014'}</span></div>
@@ -190,7 +193,7 @@ function ProfessionalsTable({
       <table className="w-full border-collapse min-w-[1000px] hidden lg:table">
         <thead>
           <tr className="bg-[var(--cor-primaria-claro)] text-center">
-            <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">{'Controle'}</th>
+            {isAdmin ? <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">{'Controle'}</th> : null}
             <th className="border border-gray-400 px-2 py-1.5 text-[clamp(11px,1.6vw,13px)]">{'N\u00BA'}</th>
             <SortTh field="cnes" sortFields={sortFields} onSort={onSort}>{'Unidade'}</SortTh>
             <SortTh field="nome_profissional" sortFields={sortFields} onSort={onSort}>{'Nome'}</SortTh>
@@ -225,20 +228,21 @@ function ProfessionalsTable({
                 )}
               >
                 <td className="border border-gray-400 px-2 py-1.5 text-center text-[clamp(11px,1.6vw,13px)]">
-                  <div className="flex items-center justify-center gap-1">
-                    {novo ? (
-                      <span className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-green-300 whitespace-nowrap">
-                        <CheckCircle2 size={10} /> {'Novo'}
-                      </span>
-                    ) : null}
-                    <input
-                      type="checkbox"
-                      checked={!!p.controle_feito}
-                      onChange={function (e) { onMarcarConcluido(p.id, e.target.checked); }}
-                      className="w-4 h-4 cursor-pointer"
-                    />
-                  </div>
-                </td>
+                  <div className="flex items-center justify-center gap-1">                  {novo ? (
+                    <span className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-green-300 whitespace-nowrap">
+                      <CheckCircle2 size={10} /> {'Novo'}
+                    </span>
+                  ) : null}
+                  {isAdmin ? (
+                  <input
+                    type="checkbox"
+                    checked={!!p.controle_feito}
+                    onChange={function (e) { onMarcarConcluido(p.id, e.target.checked); }}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  ) : null}
+                </div>
+              </td>
                 <td className="border border-gray-400 px-2 py-1.5 text-center text-[clamp(11px,1.6vw,13px)] font-bold">
                   {String((paginaAtual - 1) * itensPorPagina + i + 1)}
                 </td>

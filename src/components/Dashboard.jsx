@@ -576,7 +576,7 @@ export default function Dashboard({ onNavigate }) {
           {alertas.length === 0 ? <div className={mutedText + ' text-xs'}>Nenhum alerta.</div> : alertas.map((a, i) => (
             <div key={i} className={`text-xs py-1 px-2 mb-0.5 border-l-4 flex items-center justify-between gap-2 ${a.type === 'critical' ? 'border-l-red-500 bg-red-50' : 'border-l-yellow-400 bg-yellow-50'}`}>
               <span>{a.msg}</span>
-              {a.msg?.includes('CPF duplicado') && (
+              {a.msg?.includes('CPF duplicado') && isAdmin && (
                 <button
                   onClick={() => setDuplicadosModalOpen(true)}
                   className="inline-flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer hover:scale-105 shrink-0 shadow-sm"
@@ -600,7 +600,7 @@ export default function Dashboard({ onNavigate }) {
                   <span className="flex-1"><strong>{sol.tipo === 'update' ? 'Alteração' : 'Exclusão'}</strong> - {prof?.nome_profissional || sol.dados_antigos?.nome_profissional || `ID ${sol.profissional_id}`} <span className="text-gray-500">{new Date(sol.criado_em).toLocaleString()}</span></span>
                   <div className="flex gap-1 self-end sm:self-auto">
                     {isEditor ? (<><button onClick={() => setSolicitacaoModal(sol)} className="bg-green-500 hover:bg-green-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Aprovar</button>
-                    <button onClick={async () => { if (window.confirm(`Rejeitar?`)) { await supabase.from('solicitacoes').update({ status: 'rejeitado' }).eq('id', sol.id); refreshData(); } }} className="bg-red-500 hover:bg-red-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Rejeitar</button></>) : (<span className="text-gray-400 text-[10px] italic">Apenas admin/editor</span>)}
+                    <button onClick={async () => { if (window.confirm(`Rejeitar?`)) { await supabase.from('solicitacoes').update({ status: 'rejeitado' }).eq('id', sol.id); refreshData(); } }} className="bg-red-500 hover:bg-red-600 text-white rounded-full px-3 py-0.5 text-[10px] font-bold cursor-pointer">Rejeitar</button></>) : (<span className="text-gray-400 text-[10px] italic">Apenas administrador</span>)}
                   </div>
                 </div>
               );
@@ -647,10 +647,10 @@ export default function Dashboard({ onNavigate }) {
           <option value="concluidos">Concluídos</option>
         </select>
         <span className={`text-xs md:text-sm ${mutedText}`}>{loading ? <span className="inline-block w-16 h-4 bg-gray-200 animate-pulse rounded" /> : `${profissionaisFiltrados.length} encontrados`}</span>
-        {isEditor && <button onClick={marcarTodosConcluidos} className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded font-bold text-[11px] md:text-xs flex items-center gap-1.5 cursor-pointer"><CheckCheck size={14} /> Concluir</button>}
-        <button onClick={() => setUnidadesSemCadastroModalOpen(true)} className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded font-bold text-[11px] md:text-xs flex items-center gap-1.5 cursor-pointer">
+        {isAdmin && <button onClick={marcarTodosConcluidos} className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded font-bold text-[11px] md:text-xs flex items-center gap-1.5 cursor-pointer"><CheckCheck size={14} /> Concluir</button>}
+        {isAdmin && <button onClick={() => setUnidadesSemCadastroModalOpen(true)} className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded font-bold text-[11px] md:text-xs flex items-center gap-1.5 cursor-pointer">
           <Users size={14} /> Relacionar
-        </button>
+        </button>}
       </div>
 
       <div className="bg-[var(--cor-primaria)] text-white px-3 md:px-4 py-1 font-bold text-xs md:text-sm">1. DADOS DA UNIDADE</div>
@@ -699,7 +699,7 @@ export default function Dashboard({ onNavigate }) {
           )}
         </div>
       </div>
-      <ProfessionalsTable profissionaisFiltrados={paginaAtualData} onMarcarConcluido={marcarConcluido} getCboDesc={getCboDesc} paginaAtual={paginaAtualSegura} itensPorPagina={itensPorPagina} sortFields={sortFields} onSort={handleSort} />
+      <ProfessionalsTable profissionaisFiltrados={paginaAtualData} onMarcarConcluido={marcarConcluido} getCboDesc={getCboDesc} paginaAtual={paginaAtualSegura} itensPorPagina={itensPorPagina} sortFields={sortFields} onSort={handleSort} isAdmin={isAdmin} />
 
       {/* Pagination Controls */}
       <div className={`flex items-center justify-center gap-1.5 px-3 md:px-4 py-3 ${bgColor} border-t ${borderColor} flex-wrap`}>

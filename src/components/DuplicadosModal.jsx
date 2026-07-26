@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { AlertTriangle, User, Trash2, Building2, Copy, CheckCircle, ShieldAlert, ChevronDown } from 'lucide-react';
 
 export default function DuplicadosModal({ isOpen, onClose, duplicadosData, unidades, onComplete }) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const toast = useToast();
   const [processando, setProcessando] = useState(null);
   const [expandido, setExpandido] = useState(null);
@@ -165,7 +165,7 @@ export default function DuplicadosModal({ isOpen, onClose, duplicadosData, unida
                           </div>
 
                           <div className="flex items-center gap-2 shrink-0">
-                            {!isPrimeiro && (
+                            {!isPrimeiro && isAdmin && (
                               <button
                                 onClick={() => handleExcluirVinculo(prof, grupo.cpf)}
                                 disabled={isProcessando || !podeExcluir}
